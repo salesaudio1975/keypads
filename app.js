@@ -13,13 +13,14 @@ const ls={get(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e)
 let D={id:"",title:"",replyTo:"",rev:0,kp:[]};   // project
 let ORIG=null;                                    // the version the link opened with (for "Undo all my changes")
 const st={finish:"nickel",case:"free",size:"14",floor:"All"};
-let EMAIL="";                                     // the email that unlocked this project (client mode)
+let EMAIL="";
+let PF="nickel";                                  // the project finish (locked in the link)                                     // the email that unlocked this project (client mode)
 const B={client:"",reply:""};                     // builder-only fields
 function fix(){if(!FIN.some(f=>f[0]===st.finish))st.finish="nickel";if(!CASES.some(c=>c[0]===st.case))st.case="free";if(!["14","12"].includes(st.size))st.size="14"}
 function validKp(kp){return Array.isArray(kp)&&kp.every(k=>k&&Array.isArray(k.cols)&&Array.isArray(k.labels))}
 function save(){
   if(MODE==="builder"){ls.set("kpBuilder",{d:D,st:pickSt(),b:B});const o=$("bOut");if(o)o.hidden=true}
-  else if(D.id)ls.set("kp:"+D.id,{d:D,st:pickSt(),rev:D.rev});
+  else if(D.id)ls.set("kp:"+D.id,{d:D,st:pickSt(),rev:D.rev,pf:PF});
 }
 const pickSt=()=>({finish:st.finish,case:st.case,size:st.size});
 
@@ -69,9 +70,19 @@ function segItems(id,items,key){
   if(items)el.innerHTML=items.map(([v,l,c])=>`<button type="button" data-v="${esc(v)}">${c?`<i class="sw" style="background:${c}"></i>`:""}${esc(l)}</button>`).join("");
   el.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st[key]));
   if(!el.dataset.bound){el.dataset.bound=1;el.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;st[key]=b.dataset.v;save();
-    el.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===st[key]));render()})}
+    el.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===st[key]));render();finishNote()})}
 }
-function initBar(){fix();segItems("finish",FIN,"finish");segItems("case",CASES,"case");segItems("size",[["14","14 pt"],["12","12 pt"]],"size")}
+function finishNote(){
+  const n=$("finNote");if(!n)return;
+  if(MODE==="builder"){n.innerHTML=`<span class="small">The client's link opens in this finish. They can tap others to compare.</span>`;return}
+  const name=v=>(FIN.find(f=>f[0]===v)||[0,v])[1];
+  n.innerHTML=st.finish===PF?`<span class="small">This is your project's finish. Tap another to compare.</span>`
+    :`<span class="small">Previewing <b>${esc(name(st.finish))}</b>. Your project's finish is <b>${esc(name(PF))}</b>.</span> <button type="button" class="btnx" id="finBack">Back to project finish</button> <button type="button" class="btnx primary" id="finUse">Use ${esc(name(st.finish))} for my project</button>`;
+  const bk=$("finBack");if(bk)bk.onclick=()=>{st.finish=PF;save();initBar();render()};
+  const us=$("finUse");if(us)us.onclick=()=>{PF=st.finish;save();initBar();render();toast("Project finish set to "+name(PF)+". Send changes to let us know.")};
+  if(ORIG&&PF!==ORIG.pf)n.insertAdjacentHTML("beforeend",` <span class="small">You changed this from <b>${esc(name(ORIG.pf))}</b>.</span>`);
+}
+function initBar(){fix();segItems("finish",FIN.map(([v,l,c])=>[v,MODE==="client"&&v===PF?l+" ★":l,c]),"finish");finishNote();segItems("case",CASES,"case");segItems("size",[["14","14 pt"],["12","12 pt"]],"size")}
 
 // ---------- keypad editor ----------
 const ed=$("ed");let cur=-1;
@@ -163,7 +174,7 @@ async function open_(token,email){
   return JSON.parse(new TextDecoder().decode(data));
 }
 const siteBase=()=>new URL("./",location.href).href;
-async function makeLink(email){return siteBase()+"#e="+await seal({v:1,id:D.id,title:D.title,replyTo:D.replyTo,rev:D.rev,kp:D.kp,st:pickSt()},email)}
+async function makeLink(email){return siteBase()+"#e="+await seal({v:1,id:D.id,title:D.title,replyTo:D.replyTo,rev:D.rev,kp:D.kp,st:{...pickSt(),finish:MODE==="builder"?st.finish:PF}},email)}
 
 // ---------- send changes (client) ----------
 const sd=$("sd");
@@ -174,7 +185,8 @@ $("sendBtn").addEventListener("click",async()=>{
   const bad=D.kp.flatMap(k=>k.labels.filter(tooLong));
   $("sdWarn").innerHTML=bad.length?`<div class="banner">Still too long for Lutron: ${bad.map(esc).join(", ")}. You can send anyway, but these need shortening before ordering.</div>`:"";
   const subj=(D.title||"Project")+" keypad changes";
-  const body="Here are my keypad changes. Open this link and use the same email as before:\n\n"+url+"\n";
+  const fn=(FIN.find(f=>f[0]===PF)||[0,PF])[1];
+  const body="Here are my keypad changes (finish: "+fn+"). Open this link and use the same email as before:\n\n"+url+"\n";
   $("sdMail").href="mailto:"+encodeURIComponent(D.replyTo||"")+"?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body);
   $("sdCopy").onclick=()=>copy(url);
 });
@@ -193,9 +205,9 @@ let resetArm=0;$("resetBtn").addEventListener("click",e=>{const b=e.currentTarge
   if(Date.now()-resetArm>4000){resetArm=Date.now();b.textContent="Tap again to undo everything";setTimeout(()=>b.textContent="Undo all my changes",4000);return}
   resetArm=0;b.textContent="Undo all my changes";
   if(MODE==="builder"){D={id:"",title:"",replyTo:"",rev:0,kp:[]};B.client="";B.reply="";ls.del("kpBuilder");builderFill()}
-  else{D=clone(ORIG.d);Object.assign(st,ORIG.st);ls.del("kp:"+D.id)}
+  else{D=clone(ORIG.d);Object.assign(st,ORIG.st);PF=ORIG.pf;st.finish=PF;ls.del("kp:"+D.id)}
   initBar();render();toast(MODE==="builder"?"Started over":"Back to the version in the link")});
-let tt;function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),1400)}
+let tt;function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),Math.max(1400,m.length*45))}
 
 // ---------- client start: unlock with email ----------
 function showGate(msg){
@@ -210,13 +222,18 @@ function useProject(p,email){
   const emails=ls.get("kp:emails")||[];if(!emails.includes(EMAIL)){emails.unshift(EMAIL);ls.set("kp:emails",emails.slice(0,10))}
   ls.set("kp:lastLink",location.hash);
   ORIG={d:{id:p.id,title:p.title,replyTo:p.replyTo||"",rev:p.rev||0,kp:p.kp},st:p.st||{}};
+  PF=FIN.some(f=>f[0]===(p.st||{}).finish)?p.st.finish:"nickel";ORIG.pf=PF;
   const local=ls.get("kp:"+p.id);
-  if(local&&validKp(local.d&&local.d.kp)&&(local.rev||0)>=(p.rev||0)){D=local.d;Object.assign(st,local.st||{})}
+  if(local&&validKp(local.d&&local.d.kp)&&(local.rev||0)>=(p.rev||0)){D=local.d;Object.assign(st,local.st||{});if(FIN.some(f=>f[0]===local.pf))PF=local.pf}
   else{D=clone(ORIG.d);Object.assign(st,ORIG.st);
     if(local)$("banner").innerHTML=`<div class="banner">This link is newer than what was saved on this device, so you're seeing the link's version.</div>`;
     save()}
+  st.finish=PF;
   $("gate").hidden=true;$("app").hidden=false;initBar();render();
+  $("helpLink").hidden=false;$("helpLink").onclick=showHelp;
+  if(!ls.get("kp:helpSeen"))showHelp();
 }
+function showHelp(){const h=$("help");if(h.showModal)h.showModal();else h.setAttribute("open","");ls.set("kp:helpSeen",1)}
 async function startClient(){
   const m=location.hash.match(/^#e=([A-Za-z0-9_-]+)$/);
   if(!m){const last=ls.get("kp:lastLink");$("gateLanding").hidden=false;$("gateForm").hidden=true;
@@ -239,7 +256,7 @@ function builderFill(){
 function startBuilder(){
   const s=ls.get("kpBuilder");
   if(s&&s.d&&validKp(s.d.kp)){D=s.d;Object.assign(st,s.st||{});Object.assign(B,s.b||{})}
-  $("sendBtn").hidden=true;$("resetBtn").textContent="Undo all my changes";
+  $("sendBtn").hidden=true;$("finLabel").textContent="Project finish";$("resetBtn").textContent="Undo all my changes";
   $("builder").innerHTML=$("builderTpl").innerHTML;
   builderFill();
   $("bTitle").addEventListener("input",e=>{D.title=e.target.value;save();render()});

@@ -43,7 +43,7 @@
   <div class="top">
     <div>
       <h1 id="title">Keypads</h1>
-      <p class="sub" id="subline">Set up a project, then send the client a link they can edit. Tap any keypad to change it.</p>
+      <p class="sub" id="subline">Set up a project, then send the client a link they can edit. Tap any keypad to change it. <a href="#" id="helpLink" hidden onclick="return false">How this works</a></p>
     </div>
     <div class="actions">
       <button type="button" class="btnx" id="addBtn">+ Add keypad</button>
@@ -53,7 +53,7 @@
   <div id="banner"></div>
   <div id="builder"></div>
   <div class="bar" role="group" aria-label="Mockup options">
-    <div class="ctl"><span>Finish</span><div class="seg" id="finish"></div></div>
+    <div class="ctl"><span id="finLabel">Finish</span><div class="seg" id="finish"></div><div id="finNote" class="finnote"></div></div>
     <div class="ctl"><span>Case</span><div class="seg" id="case"></div></div>
     <div class="ctl"><span>Text size</span><div class="seg" id="size"></div></div>
     <div class="ctl"><span>Floor</span><div class="seg" id="floorSel"></div></div>
@@ -89,6 +89,17 @@
     <button type="button" class="btnx" id="sdCopy">Copy link</button>
   </div>
   <div class="dfoot"><span></span><div class="r"><button type="submit" class="btnx">Close</button></div></div>
+</form></dialog>
+<dialog id="help" aria-labelledby="helpTitle"><form method="dialog" class="dlg">
+  <h3 id="helpTitle">How this works</h3>
+  <ol class="steps">
+    <li><b>These are your keypads</b>, drawn the way they'll look on the wall in your project's finish (marked ★).</li>
+    <li><b>Tap any keypad</b> to change what the buttons say. A name turns red if it's too long to engrave; shorten it or add a space so it fits on two lines.</li>
+    <li><b>Your changes save on this device</b> as you go, so you can come back to this link later.</li>
+    <li><b>When you're done, tap “Send changes”</b> to email them to us.</li>
+  </ol>
+  <p class="small">You can tap other finishes at the top to compare. To pick a different one, tap it, then “Use … for my project”.</p>
+  <div class="dfoot"><span></span><div class="r"><button type="submit" class="btnx primary">Got it</button></div></div>
 </form></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="app.js"></script>
