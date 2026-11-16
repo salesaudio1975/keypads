@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<link rel="icon" href="icons/icon-192.png">
+<title>40 Bedford Street keypads</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: a wall of faceplates grouped by floor, one control bar on top */
+:root{
+  --bg:#eef0f1; --surface:#ffffff; --fg:#1d2328; --muted:#5f6a72; --line:#d3d8dc; --accent:#2f6f8f;
+  --wall:#e3e5e3;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif; --body:"Inter",system-ui,-apple-system,Segoe UI,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#15191c;--surface:#1e2327;--fg:#e7eaec;--muted:#9aa5ad;--line:#333b41;--accent:#7cb8d6;--wall:#262b2f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15191c;--surface:#1e2327;--fg:#e7eaec;--muted:#9aa5ad;--line:#333b41;--accent:#7cb8d6;--wall:#262b2f;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px}
+.wrap{max-width:1180px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:-.01em;margin:0 0 4px;text-wrap:balance}
+.sub{color:var(--muted);margin:0 0 20px;max-width:65ch;line-height:1.5}
+.bar{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:flex-end;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-bottom:28px}
+.ctl{display:flex;flex-direction:column;gap:6px}
+.ctl>span{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{font:inherit;font-size:13px;border:0;background:transparent;color:var(--fg);padding:7px 11px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+#finish{flex-wrap:wrap;gap:1px;background:var(--line)}
+#finish button{background:var(--surface);border:0;flex:1 1 auto;justify-content:center}
+#finish button[aria-pressed="true"]{background:var(--accent)}
+.ctl{min-width:0;max-width:100%}
+.sw{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.25)}
+.floor{margin-top:30px}
+.floor h2{font-family:var(--display);font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:600;margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(212px,1fr));gap:22px 18px}
+.kp{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:0}
+.wallbox{background:var(--wall);border-radius:8px;padding:18px 0;width:100%;display:flex;justify-content:center}
+.cap{text-align:center;min-width:0;width:100%}
+.cap b{font-family:var(--display);font-weight:600;font-size:13px;display:block}
+.cap small{color:var(--muted);font-size:12px;line-height:1.35;display:block;overflow-wrap:anywhere}
+.tag{display:inline-block;margin-left:6px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px;vertical-align:1px}
+
+/* Faceplate: Alisse square, 90.2 mm (3.55 in); circular buttons, up to 3 per column, 1 or 2 columns */
+.plate{--pw:176px;width:var(--pw);aspect-ratio:1/1;border-radius:4px;box-sizing:border-box;position:relative;
+  background:var(--pf);box-shadow:0 1px 1px rgba(0,0,0,.18),0 7px 16px rgba(0,0,0,.16),inset 0 0 0 1px var(--pedge)}
+.cell{position:absolute;transform:translateX(-50%);margin-top:calc(var(--pw)*-.055);display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
+.one .cell{width:80%}
+.two .cell{width:33%}
+.bt{flex:none;width:calc(var(--pw)*.11);aspect-ratio:1/1;border-radius:50%;background:var(--bf);
+  box-shadow:0 0 0 1.5px var(--ring),inset 0 1px 1px var(--bhi),inset 0 -1px 2px var(--bedge)}
+.tx{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-weight:400;color:var(--ink);font-size:calc(var(--pw) * var(--pt,14) / 255.6);line-height:1.1;max-width:100%;letter-spacing:0;font-weight:700;overflow-wrap:normal}
+.pt12 .tx{--pt:12}
+.tx.bad{color:#c62828!important;font-weight:700}
+.warn{display:inline-block;margin-top:3px;font-size:11px;font-weight:600;color:#b42318}
+.cell.empty .tx{font-style:italic;opacity:.55;text-transform:none;letter-spacing:0}
+
+.f-agedbrass{--pf:linear-gradient(150deg,#806d4d,#655232 55%,#776444);--pedge:rgba(0,0,0,.3);--bf:radial-gradient(circle at 40% 35%,#847151,#584525);--bedge:rgba(0,0,0,.3);--bhi:rgba(255,255,255,.14);--ring:rgba(0,0,0,.5);--ink:#D3C9B5;--halo:#eef6ff}
+.f-agedbronze{--pf:linear-gradient(150deg,#5c5145,#41362a 55%,#53483c);--pedge:rgba(0,0,0,.3);--bf:radial-gradient(circle at 40% 35%,#605549,#34291d);--bedge:rgba(0,0,0,.3);--bhi:rgba(255,255,255,.14);--ring:rgba(0,0,0,.5);--ink:#B8B1A5;--halo:#eef6ff}
+.f-chrome{--pf:linear-gradient(150deg,#f2f3f4,#c9cacb 45%,#ebeced 70%,#c2c3c4);--pedge:rgba(0,0,0,.14);--bf:radial-gradient(circle at 40% 35%,#f5f6f7,#c9cacb);--bedge:rgba(0,0,0,.14);--bhi:rgba(255,255,255,.7);--ring:rgba(0,0,0,.2);--ink:#5E5850;--halo:#eef6ff}
+.f-brushedbrass{--pf:linear-gradient(150deg,#bba470,#a68f5b 55%,#b49d69);--pedge:rgba(0,0,0,.14);--bf:radial-gradient(circle at 40% 35%,#c3ac78,#97804c);--bedge:rgba(0,0,0,.14);--bhi:rgba(255,255,255,.7);--ring:rgba(0,0,0,.2);--ink:#463B22;--halo:#eef6ff}
+.f-graphite{--pf:linear-gradient(150deg,#454441,#2a2926 55%,#3c3b38);--pedge:rgba(0,0,0,.3);--bf:radial-gradient(circle at 40% 35%,#494845,#1d1c19);--bedge:rgba(0,0,0,.3);--bhi:rgba(255,255,255,.14);--ring:rgba(0,0,0,.5);--ink:#7E786E;--halo:#eef6ff}
+.f-matteblack{--pf:linear-gradient(150deg,#313131,#161616 55%,#282828);--pedge:rgba(0,0,0,.3);--bf:radial-gradient(circle at 40% 35%,#353535,#090909);--bedge:rgba(0,0,0,.3);--bhi:rgba(255,255,255,.14);--ring:rgba(0,0,0,.5);--ink:#716B64;--halo:#eef6ff}
+.f-nickel{--pf:linear-gradient(150deg,#c2bfbb,#adaaa6 55%,#bbb8b4);--pedge:rgba(0,0,0,.14);--bf:radial-gradient(circle at 40% 35%,#cac7c3,#9e9b97);--bedge:rgba(0,0,0,.14);--bhi:rgba(255,255,255,.7);--ring:rgba(0,0,0,.2);--ink:#5A554E;--halo:#eef6ff}
+.f-brilliantwhite{--pf:linear-gradient(150deg,#f1efe9,#dcdad4 55%,#eae8e2);--pedge:rgba(0,0,0,.14);--bf:radial-gradient(circle at 40% 35%,#f9f7f1,#cdcbc5);--bedge:rgba(0,0,0,.14);--bhi:rgba(255,255,255,.7);--ring:rgba(0,0,0,.2);--ink:#A5A6A5;--halo:#eef6ff}
+.f-champagne{--pf:linear-gradient(150deg,#cac5b0,#b5b09b 55%,#c3bea9);--pedge:rgba(0,0,0,.14);--bf:radial-gradient(circle at 40% 35%,#d2cdb8,#a6a18c);--bedge:rgba(0,0,0,.14);--bhi:rgba(255,255,255,.7);--ring:rgba(0,0,0,.2);--ink:#463D26;--halo:#eef6ff}
+.f-archwhite{--pf:linear-gradient(150deg,#f8f7f2,#e3e2dd 55%,#f1f0eb);--pedge:rgba(0,0,0,.14);--bf:radial-gradient(circle at 40% 35%,#fffffa,#d4d3ce);--bedge:rgba(0,0,0,.14);--bhi:rgba(255,255,255,.7);--ring:rgba(0,0,0,.2);--ink:#A7A8A7;--halo:#eef6ff}
+.f-snowwhite{--pf:linear-gradient(150deg,#fefefe,#e9e9e9 55%,#f7f7f7);--pedge:rgba(0,0,0,.14);--bf:radial-gradient(circle at 40% 35%,#ffffff,#dadada);--bedge:rgba(0,0,0,.14);--bhi:rgba(255,255,255,.7);--ring:rgba(0,0,0,.2);--ink:#A9AAA9;--halo:#eef6ff}
+.note{margin-top:36px;color:var(--muted);font-size:12px;line-height:1.5;max-width:70ch}
+@media (max-width:440px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px}.plate{--pw:140px}h1{font-size:23px}}
+@media (prefers-reduced-motion:no-preference){.btn span{transition:color .2s,text-shadow .2s}}
+/* Editing */
+.top{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btnx{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 13px;border-radius:7px;cursor:pointer}
+.btnx.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btnx.danger{color:#b42318}
+.btnx:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hint{color:var(--muted);font-size:13px;margin:0 0 18px}
+.banner{background:#fff4d6;color:#5c4400;border:1px solid #f0d58a;border-radius:8px;padding:10px 14px;margin:0 0 18px;font-size:13px}
+.kp{cursor:pointer;border-radius:10px;padding:4px;margin:-4px;outline:none}
+.kp:hover .wallbox,.kp:focus-visible .wallbox{box-shadow:0 0 0 2px var(--accent)}
+.kp .edit{font-size:11px;color:var(--accent);font-weight:600;margin-top:2px;display:block}
+.three .cell{width:24%}
+.plate.three{width:calc(var(--pw)*1.358);aspect-ratio:auto;height:var(--pw)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#1d2328;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:50}
+.toast.on{opacity:1}
+dialog{border:0;border-radius:12px;padding:0;width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 24px);background:var(--surface);color:var(--fg);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(10,14,18,.5)}
+.dlg{padding:18px 18px 16px;display:flex;flex-direction:column;gap:14px}
+.dlg h3{margin:0;font-family:var(--display);font-size:18px}
+.row3{display:grid;grid-template-columns:130px 1fr;gap:10px}
+.row3 .full{grid-column:1/-1}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);min-width:0}
+label.f input,label.f select{font:inherit;font-size:15px;text-transform:none;letter-spacing:0;font-weight:400;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:8px 10px;min-width:0;width:100%;box-sizing:border-box}
+label.f input:focus,label.f select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.cols{display:grid;gap:12px}
+.colh{font-size:12px;font-weight:700;color:var(--fg);margin:0 0 6px}
+.bl{display:grid;grid-template-columns:1fr;gap:3px;margin-bottom:8px}
+.bl input{font:inherit;font-size:15px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:8px 10px;width:100%;box-sizing:border-box}
+.bl input.bad{border-color:#c62828;background:#fdecec;color:#7a1010}
+.bl small{font-size:11px;color:var(--muted)}
+.bl small.bad{color:#b42318;font-weight:600}
+.pv{display:flex;justify-content:center;background:var(--wall);border-radius:8px;padding:14px 0}
+.dfoot{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between}
+.dfoot .r{display:flex;gap:8px;flex-wrap:wrap}
+.sendlist{margin:0;padding-left:18px;color:var(--muted);font-size:13px;line-height:1.5}
+@media (max-width:440px){dialog{width:100vw;max-width:100vw;max-height:100vh;height:100%;border-radius:0;margin:0}.row3{grid-template-columns:110px 1fr}}
+@media print{.top .actions,.bar,.hint,.banner,.kp .edit,.note{display:none!important}body{background:#fff}.kp{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1 id="title">Keypads</h1>
+      <p class="sub" id="subline">Lutron Alisse keypads. Tap any keypad to change its button names or layout.</p>
+    </div>
+    <div class="actions">
+      <button type="button" class="btnx" id="addBtn">+ Add keypad</button>
+      <button type="button" class="btnx primary" id="sendBtn">Send changes</button>
+    </div>
+  </div>
+  <div id="banner"></div>
+
+  <div class="bar" role="group" aria-label="Mockup options">
+    <div class="ctl"><span>Finish</span><div class="seg" id="finish"></div></div>
+    <div class="ctl"><span>Case</span><div class="seg" id="case"></div></div>
+    <div class="ctl"><span>Text size</span><div class="seg" id="size"></div></div>
+    <div class="ctl"><span>Floor</span><div class="seg" id="floorSel"></div></div>
+  </div>
+
+  <div id="out"></div>
+  <p class="note">Engraving is checked like Lutron's engraving tool (Helvetica, centered, 2 lines max). Names that are too wide show in red. Your changes are saved in this browser until you send them. This is a mockup for checking layout and wording; colors on screen are approximate.</p>
+  <p class="note"><button type="button" class="btnx" id="csvBtn">Download for Google Sheet (CSV)</button> <button type="button" class="btnx" id="printBtn">Print</button> <button type="button" class="btnx danger" id="resetBtn">Undo all my changes</button></p>
+</div>
+
+<dialog id="ed" aria-labelledby="edTitle"><form method="dialog" class="dlg" id="edForm">
+  <h3 id="edTitle">Keypad</h3>
+  <div class="pv" id="edPv"></div>
+  <div class="row3">
+    <label class="f">Keypad #<input id="edN" autocomplete="off"></label>
+    <label class="f">Location<input id="edLoc" autocomplete="off"></label>
+    <label class="f">Floor<input id="edFloor" list="floorList" autocomplete="off"></label>
+    <label class="f">Layout<select id="edLay"></select></label>
+  </div>
+  <datalist id="floorList"></datalist>
+  <div class="cols" id="edCols"></div>
+  <div class="dfoot">
+    <div class="r"><button type="button" class="btnx danger" id="edDel">Delete keypad</button><button type="button" class="btnx" id="edDup">Duplicate</button></div>
+    <div class="r"><button type="submit" class="btnx primary" id="edDone">Done</button></div>
+  </div>
+</form></dialog>
+
+<dialog id="sd" aria-labelledby="sdTitle"><form method="dialog" class="dlg">
+  <h3 id="sdTitle">Send your changes</h3>
+  <p style="margin:0;line-height:1.5">This makes a link that opens the keypads exactly as you have them now. Email it, or copy it into a text message.</p>
+  <div id="sdWarn"></div>
+  <div class="actions">
+    <a class="btnx primary" id="sdMail" href="#" style="text-decoration:none">Email changes</a>
+    <button type="button" class="btnx" id="sdCopy">Copy link</button>
+  </div>
+  <div class="dfoot"><span></span><div class="r"><button type="submit" class="btnx">Close</button></div></div>
+</form></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// The project's keypads as Audio Breakthroughs set them up. Edits save in the visitor's browser; "Send changes" shares them as a link.
+const ORIGINAL={"title":"40 Bedford Street","kp":[{"n":"1","floor":"Basement","loc":"Garden Hallway","cols":[3],"labels":["Hallway","Playroom","Main Hallway"]},{"n":"2","floor":"Basement","loc":"Laundry Room","cols":[1],"labels":[""]},{"n":"3","floor":"Basement","loc":"Media/Play Room B-08 (front)","cols":[3],"labels":["Bright","Soft","Hallway"]},{"n":"3","floor":"Basement","loc":"Media/Play Room (Bathroom wall)","cols":[2],"labels":["Bright","Soft"]},{"n":"4","floor":"Basement","loc":"Media/Play Room B-08 (rear door)","cols":[3],"labels":["Patio","Garden","Interior"]},{"n":"5","floor":"Basement","loc":"Bathroom B-07","cols":[2,2],"labels":["Bathroom","Fan","Soft","Night"]},{"n":"6","floor":"Basement","loc":"Hall by bathroom (check)","cols":[2,2],"labels":["Bathroom","Fan","Soft","Night"]},{"n":"7","floor":"Basement","loc":"Bedroom B-03","cols":[3],"labels":["Bedroom","Bedside","Suite Off"]},{"n":"8","floor":"First","loc":"Entry vestibule","cols":[3],"labels":["Welcome","Entry","Goodbye"]},{"n":"9","floor":"First","loc":"Hallway 01-06 (front)","cols":[2,2],"labels":["Main Floor","Entry","Kid's Floor","Pathway"]},{"n":"10","floor":"First","loc":"Hallway 01-06 (by stairs)","cols":[2,2],"labels":["Garden","Main Hallway","Pathway","Accent"]},{"n":"11","floor":"First","loc":"Powder Room 01-04","cols":[3],"labels":["Powder Room","Soft","Fan"]},{"n":"13","floor":"First","loc":"Kitchen 01-03 (entry)","cols":[2,2],"labels":["Kitchen","Counter","Island","Cabinet"]},{"n":"14","floor":"First","loc":"Kitchen 01-03 (rear door)","cols":[2,2],"labels":["Kitchen","Patio","Soft","Garden"]},{"n":"15","floor":"First","loc":"Dining Room 01-02","cols":[2,2],"labels":["Dining Room","Accent","Soft","Dinner Time"]},{"n":"16","floor":"First","loc":"Living Room 01-01","cols":[2,2],"labels":["Living Room","Accent","Soft","TV"]},{"n":"17","floor":"Second","loc":"Hallway 02-01 (stairs up)","cols":[2,2],"labels":["Kid's Hall","Accent","Pathway","Primary Hall"]},{"n":"18","floor":"Second","loc":"Hallway 02-01 (top of stairs)","cols":[2,2],"labels":["Kid's Hall","Accent","Pathway","Main Hall"]},{"n":"19","floor":"Second","loc":"Bedroom 2 02-04 (Back)","cols":[3,3],"labels":["Bright","Reading","Sheer","Dim","Hallway","Blackout"]},{"n":"20","floor":"Second","loc":"Bathroom 02-06","cols":[2,2],"labels":["Bright","Fan","Dim","Night"]},{"n":"21","floor":"Second","loc":"Bedroom 1 02-02 (front)","cols":[2,2],"labels":["Bright","Sheer","Dim","Blackout"]},{"n":"22","floor":"Third","loc":"Office 03-03","cols":[2,2],"labels":["Office","Tea Bar","Desk","Hallway"]},{"n":"23","floor":"Third","loc":"Hallway 03-01 (stairs)","cols":[2,2],"labels":["Bedroom","Hallway","Entry","Pathway"]},{"n":"24","floor":"Third","loc":"Master Bedroom 03-02 (entry)","cols":[2,2],"labels":["Bright","Goodnight","Dim","Suite Off"]},{"n":"25","floor":"Third","loc":"Master Bedroom 03-02 (by closet)","cols":[2,2],"labels":["Bright","Closet","Dim","Shades"]},{"n":"30","floor":"Third","loc":"Master Bedroom 03-02 (Left Of Bed)","cols":[3,3],"labels":["Bedroom","Reading","Night","Accent","Shades","Goodnight"]},{"n":"29","floor":"Third","loc":"Master Closet","cols":[2,2],"labels":["Bright","Bathroom","Dim","Shade"]},{"n":"31","floor":"Third","loc":"Master Bedroom 03-02 (Right Of Bed)","cols":[3,3],"labels":["Accent","Shades","Goodnight","Bedroom","Reading","Night"]},{"n":"26","floor":"Third","loc":"Master Bathroom Entry 03-04","cols":[2,2],"labels":["Bright","Fan","Dim","Shades"]},{"n":"27","floor":"Third","loc":"Master Bathroom 03-05 Toilet","cols":[2,2],"labels":["Bright","Fan","Dim","Night"]},{"n":"28","floor":"Third","loc":"Master Bathroom 03-05 Sink","cols":[3,3],"labels":["Chandelier","Ceiling","Bath","Vanity","Towel Bar","Shower"]}]};
+const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
+const CASES=[["free","free-form"],["title","Title Case"],["caps","ALL CAPS"],["lower","all lower case"]];
+const LAYOUTS=["1","2","3","1 + 1","1 + 3","2 + 2","3 + 1","3 + 3","1 + 1 + 1","1 + 3 + 3","2 + 2 + 2","3 + 3 + 1","3 + 3 + 3"];
+const KEY="alisseKp:"+location.pathname;
+const clone=o=>JSON.parse(JSON.stringify(o));
+
+// ---------- state ----------
+let D=clone(ORIGINAL);           // {title, kp:[{n,floor,loc,cols:[..],labels:[..]}], finish?, case?, size?}
+const st={finish:"nickel",case:"free",size:"14",floor:"All"};
+function valid(d){return d&&Array.isArray(d.kp)&&d.kp.every(k=>Array.isArray(k.cols)&&Array.isArray(k.labels))}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s){if(valid(s.d))D=s.d;Object.assign(st,s.st||{})}}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({d:D,st}))}catch(e){}}
+function fix(){if(!FIN.some(f=>f[0]===st.finish))st.finish="nickel";if(!CASES.some(c=>c[0]===st.case))st.case="free";if(!["14","12"].includes(st.size))st.size="14"}
+load();
+
+// ---------- engraving rules (same as the Google Sheet) ----------
+const CHAR_W=[278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584],LINE_LIMIT_14=5558;
+function textWidth(s){let w=0;for(const ch of s){const c=ch.charCodeAt(0);w+=(c>=32&&c<=126)?CHAR_W[c-32]:556}return w}
+function fitLines(s,pt){const lim=LINE_LIMIT_14*14/pt,out=[];let cur="";
+  for(const w of s.split(/\s+/).filter(Boolean)){if(textWidth(w)>lim)return null;const t=cur?cur+" "+w:w;
+    if(textWidth(t)<=lim)cur=t;else{out.push(cur);cur=w}}
+  if(cur)out.push(cur);return out.length<=2?out:null}
+function kase(t){if(st.case==="caps")return t.toUpperCase();if(st.case==="lower")return t.toLowerCase();
+  if(st.case==="title")return t.toLowerCase().replace(/(^|\s)(\S)/g,(m,a,b)=>a+b.toUpperCase());return t}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+// ---------- drawing ----------
+// Button centers as Lutron draws them: per column 1 = 50%, 2 = 32/68%, 3 = 25/50/75%; 2 columns at 33/67%, 3 at 25/50/75%
+const YS={1:[50],2:[32,68],3:[25,50,75]};
+const XS={1:[50],2:[33,67],3:[25,50,75]};
+function layName(cols){return cols.join(" + ")}
+function plate(k){
+  const nc=k.cols.length,bad=[],cells=[];let idx=0;
+  k.cols.forEach((cnt,ci)=>{
+    const ys=YS[cnt]||[50];
+    for(let i=0;i<cnt;i++,idx++){
+      const raw=(k.labels[idx]||"").trim();
+      const t=kase(raw);const ln=raw?fitLines(t,+st.size):[];
+      if(raw&&!ln)bad.push(raw);
+      const html=!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(t);
+      cells.push(`<div class="cell" style="left:${XS[nc][ci]}%;top:${ys[i]}%"><i class="bt"></i><span class="tx${raw&&!ln?" bad":""}">${html}</span></div>`);
+    }
+  });
+  return {html:`<div class="plate ${nc===1?"one":nc===2?"two":"three"}">${cells.join("")}</div>`,bad};
+}
+function floors(){return [...new Set(D.kp.map(k=>k.floor||"No floor"))]}
+function wallCls(){return `f-${st.finish} ${st.size==="12"?"pt12":""}`}
+function render(){
+  document.getElementById("title").textContent=(D.title||"Project")+" keypads";
+  document.title=(D.title||"Project")+" keypads";
+  const fl=floors();if(st.floor!=="All"&&!fl.includes(st.floor))st.floor="All";
+  segItems("floorSel",["All",...fl].map(f=>[f,f]),"floor");
+  const out=document.getElementById("out");
+  out.innerHTML=fl.filter(f=>st.floor==="All"||f===st.floor).map(f=>{
+    const ks=D.kp.map((k,i)=>[k,i]).filter(([k])=>(k.floor||"No floor")===f);
+    return `<section class="floor"><h2>${esc(/basement|no floor/i.test(f)||/floor/i.test(f)?f:f+" floor")} · ${ks.length} keypad${ks.length===1?"":"s"}</h2><div class="grid">${ks.map(([k,i])=>{
+      const p=plate(k);const nb=k.cols.reduce((a,b)=>a+b,0);
+      return `<div class="kp" tabindex="0" role="button" data-i="${i}" aria-label="Edit keypad ${esc(k.n)}"><div class="wallbox ${wallCls()}">${p.html}</div><div class="cap"><b>Keypad ${esc(k.n)}<span class="tag">${nb}-button</span></b><small>${esc(k.loc||"")}</small>${p.bad.length?`<span class="warn">Too long for Lutron: ${p.bad.map(esc).join(", ")}</span>`:""}<span class="edit">Tap to edit</span></div></div>`}).join("")}</div></section>`;
+  }).join("")||`<p class="hint">No keypads yet. Tap “+ Add keypad”.</p>`;
+}
+const segSync={};
+function segItems(id,items,key){
+  const el=document.getElementById(id);
+  if(items)el.innerHTML=items.map(([v,l,c])=>`<button type="button" data-v="${esc(v)}">${c?`<i class="sw" style="background:${c}"></i>`:""}${esc(l)}</button>`).join("");
+  el.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st[key]));
+  if(!el.dataset.bound){el.dataset.bound=1;el.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;st[key]=b.dataset.v;save();
+    el.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===st[key]));render()})}
+}
+function initBar(){fix();segItems("finish",FIN,"finish");segItems("case",CASES,"case");segItems("size",[["14","14 pt"],["12","12 pt"]],"size")}
+
+// ---------- editor ----------
+const ed=document.getElementById("ed");let cur=-1;
+document.getElementById("edLay").innerHTML=LAYOUTS.map(l=>`<option value="${l}">${l==="1"?"1 button":/\+/.test(l)?l.split(" + ").length+" columns: "+l:l+" buttons, 1 column"}</option>`).join("");
+const COLNAME={1:["Buttons (top to bottom)"],2:["Left column (top to bottom)","Right column (top to bottom)"],3:["Left column","Middle column","Right column"]};
+function openEd(i){cur=i;const k=D.kp[i];
+  document.getElementById("edTitle").textContent="Keypad "+k.n;
+  document.getElementById("edN").value=k.n;document.getElementById("edLoc").value=k.loc||"";document.getElementById("edFloor").value=k.floor||"";
+  document.getElementById("floorList").innerHTML=floors().map(f=>`<option value="${esc(f)}">`).join("");
+  const sel=document.getElementById("edLay");const ln=layName(k.cols);
+  if(![...sel.options].some(o=>o.value===ln))sel.insertAdjacentHTML("beforeend",`<option value="${ln}">${ln}</option>`);
+  sel.value=ln;buildInputs();edPreview();
+  if(ed.showModal)ed.showModal();else ed.setAttribute("open","");
+}
+function buildInputs(){const k=D.kp[cur];let idx=0;const nc=k.cols.length;
+  document.getElementById("edCols").innerHTML=k.cols.map((cnt,ci)=>{let h=`<div><p class="colh">${COLNAME[nc][ci]}</p>`;
+    for(let i=0;i<cnt;i++,idx++)h+=`<div class="bl"><input data-b="${idx}" value="${esc(k.labels[idx]||"")}" placeholder="Button ${idx+1} name (blank = no engraving)" autocomplete="off" aria-label="Button ${idx+1} name"><small data-m="${idx}"></small></div>`;
+    return h+"</div>"}).join("");
+  checkInputs();
+}
+function checkInputs(){const k=D.kp[cur];
+  document.querySelectorAll("#edCols input").forEach(inp=>{const i=+inp.dataset.b,raw=(k.labels[i]||"").trim(),m=document.querySelector(`#edCols small[data-m="${i}"]`);
+    if(!raw){inp.classList.remove("bad");m.className="";m.textContent="No engraving";return}
+    const ln=fitLines(kase(raw),+st.size);inp.classList.toggle("bad",!ln);m.className=ln?"":"bad";
+    m.textContent=ln?(ln.length===2?"Fits on 2 lines: "+ln.join(" / "):"Fits on 1 line"):"Too long for Lutron's engraving (2 lines max). Shorten it or add a space to split it.";
+  });
+}
+function edPreview(){const p=plate(D.kp[cur]);document.getElementById("edPv").className="pv "+wallCls();document.getElementById("edPv").innerHTML=p.html}
+function changed(){save();render();edPreview();toast("Saved on this device")}
+document.getElementById("edCols").addEventListener("input",e=>{const i=e.target.dataset.b;if(i===undefined)return;D.kp[cur].labels[+i]=e.target.value;checkInputs();changed()});
+document.getElementById("edN").addEventListener("input",e=>{D.kp[cur].n=e.target.value;document.getElementById("edTitle").textContent="Keypad "+e.target.value;changed()});
+document.getElementById("edLoc").addEventListener("input",e=>{D.kp[cur].loc=e.target.value;changed()});
+document.getElementById("edFloor").addEventListener("change",e=>{D.kp[cur].floor=e.target.value.trim()||"No floor";changed()});
+document.getElementById("edLay").addEventListener("change",e=>{const k=D.kp[cur];const cols=e.target.value.split("+").map(x=>+x.trim());
+  const n=cols.reduce((a,b)=>a+b,0);k.cols=cols;k.labels=k.labels.slice(0,n);while(k.labels.length<n)k.labels.push("");buildInputs();changed()});
+document.getElementById("edDel").addEventListener("click",()=>{const k=D.kp[cur];if(!confirmDel(k))return;D.kp.splice(cur,1);ed.close();save();render();toast("Keypad "+k.n+" deleted")});
+let delArm=0;function confirmDel(k){const b=document.getElementById("edDel");if(Date.now()-delArm<4000){delArm=0;b.textContent="Delete keypad";return true}
+  delArm=Date.now();b.textContent="Tap again to delete";setTimeout(()=>{b.textContent="Delete keypad"},4000);return false}
+document.getElementById("edDup").addEventListener("click",()=>{const k=clone(D.kp[cur]);k.n=nextN();D.kp.splice(cur+1,0,k);save();render();openEd(cur+1);toast("Copied as keypad "+k.n)});
+ed.addEventListener("close",()=>{cur=-1;delArm=0;document.getElementById("edDel").textContent="Delete keypad"});
+function nextN(){const ns=D.kp.map(k=>parseInt(k.n,10)).filter(n=>!isNaN(n));return String((ns.length?Math.max(...ns):0)+1)}
+document.getElementById("addBtn").addEventListener("click",()=>{const fl=st.floor!=="All"?st.floor:(D.kp.length?D.kp[D.kp.length-1].floor:"First");
+  D.kp.push({n:nextN(),floor:fl,loc:"",cols:[3],labels:["","",""]});save();render();openEd(D.kp.length-1)});
+document.getElementById("out").addEventListener("click",e=>{const k=e.target.closest(".kp");if(k)openEd(+k.dataset.i)});
+document.getElementById("out").addEventListener("keydown",e=>{const k=e.target.closest(".kp");if(k&&(e.key==="Enter"||e.key===" ")){e.preventDefault();openEd(+k.dataset.i)}});
+
+// ---------- share link ----------
+const b64u={enc:u8=>{let s="";u8.forEach(c=>s+=String.fromCharCode(c));return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")},
+  dec:s=>{s=s.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4)s+="=";const b=atob(s);return Uint8Array.from(b,c=>c.charCodeAt(0))}};
+async function pipe(u8,stream){return new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(stream)).arrayBuffer())}
+async function encodeState(){const json=new TextEncoder().encode(JSON.stringify({d:D,st:{finish:st.finish,case:st.case,size:st.size}}));
+  if(window.CompressionStream){try{return "z"+b64u.enc(await pipe(json,new CompressionStream("deflate-raw")))}catch(e){}}return "j"+b64u.enc(json)}
+async function decodeState(s){const kind=s[0],u8=b64u.dec(s.slice(1));
+  const raw=kind==="z"?await pipe(u8,new DecompressionStream("deflate-raw")):u8;return JSON.parse(new TextDecoder().decode(raw))}
+async function shareUrl(){return location.origin+location.pathname+"#d="+await encodeState()}
+function summary(){return D.kp.map(k=>`Keypad ${k.n} (${k.floor}, ${k.loc||"no location"}), ${layName(k.cols)}: ${k.labels.map(l=>l.trim()||"(blank)").join(", ")}`).join("\n")}
+const sd=document.getElementById("sd");
+document.getElementById("sendBtn").addEventListener("click",async()=>{
+  document.getElementById("sdMail").href="#";if(sd.showModal)sd.showModal();else sd.setAttribute("open","");
+  const url=await shareUrl();const bad=D.kp.flatMap(k=>k.labels.filter(l=>l.trim()&&!fitLines(kase(l.trim()),+st.size)));
+  document.getElementById("sdWarn").innerHTML=bad.length?`<div class="banner">Still too long for Lutron: ${bad.map(esc).join(", ")}. You can send anyway, but these need shortening before ordering.</div>`:"";
+  const subj=(D.title||"Project")+" keypad changes";
+  let body="Here are my keypad changes. Open this link to see them:\n\n"+url+"\n\n";
+  const full=body+summary();body=full.length<6000?full:body;
+  document.getElementById("sdMail").href="mailto:?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body);
+  document.getElementById("sdCopy").onclick=async()=>{try{await navigator.clipboard.writeText(url);toast("Link copied")}catch(e){prompt("Copy this link:",url)}};
+});
+
+// ---------- CSV for the Google Sheet's Keypads tab ----------
+document.getElementById("csvBtn").addEventListener("click",()=>{
+  const q=v=>/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':String(v);
+  const rows=[["Keypad","Floor","Location","Layout",...Array.from({length:9},(_,i)=>"Button "+(i+1))]];
+  D.kp.forEach(k=>rows.push([k.n,k.floor,k.loc,layName(k.cols),...Array.from({length:9},(_,i)=>k.labels[i]||"")]));
+  const blob=new Blob([rows.map(r=>r.map(q).join(",")).join("\r\n")],{type:"text/csv"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(D.title||"keypads").replace(/[^\w -]/g,"")+" keypads.csv";document.body.appendChild(a);a.click();a.remove();
+});
+document.getElementById("printBtn").addEventListener("click",()=>window.print());
+let resetArm=0;document.getElementById("resetBtn").addEventListener("click",e=>{const b=e.currentTarget;
+  if(Date.now()-resetArm>4000){resetArm=Date.now();b.textContent="Tap again to undo everything";setTimeout(()=>b.textContent="Undo all my changes",4000);return}
+  resetArm=0;b.textContent="Undo all my changes";D=clone(ORIGINAL);try{localStorage.removeItem(KEY)}catch(e){}initBar();render();toast("Back to the original")});
+
+let tt;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),1400)}
+
+// ---------- start: a shared link (#d=...) opens that version ----------
+(async()=>{
+  const m=location.hash.match(/^#d=([A-Za-z0-9_-]+)$/);
+  if(m){try{const s=await decodeState(m[1]);if(valid(s.d)){D=s.d;Object.assign(st,s.st||{});save();
+      document.getElementById("banner").innerHTML=`<div class="banner">You opened a shared version of these keypads. It's now saved in this browser, and any changes you make save here too.</div>`}}
+    catch(e){document.getElementById("banner").innerHTML=`<div class="banner">That link didn't open. It may have been cut off when it was copied.</div>`}
+    history.replaceState(null,"",location.pathname)}
+  initBar();render();
+})();
+</script>
+</body>
+</html>
