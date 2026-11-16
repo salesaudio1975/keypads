@@ -52,7 +52,8 @@ function plate(k){
   return {html:`<div class="plate ${nc===1?"one":nc===2?"two":"three"}">${cells.join("")}</div>`,bad};
 }
 const floors=()=>[...new Set(D.kp.map(k=>k.floor||"No floor"))];
-const wallCls=()=>`f-${st.finish} ${st.size==="12"?"pt12":""}`;
+const wallCls=k=>`f-${(k&&k.finish&&FIN.some(f=>f[0]===k.finish))?k.finish:st.finish} ${st.size==="12"?"pt12":""}`;
+const finName=v=>(FIN.find(f=>f[0]===v)||[0,v])[1];
 function render(){
   const name=D.title||(MODE==="builder"?"New project":"Your");
   $("title").textContent=name+" keypads";document.title=name+" keypads";
@@ -62,7 +63,7 @@ function render(){
     const ks=D.kp.map((k,i)=>[k,i]).filter(([k])=>(k.floor||"No floor")===f);
     return `<section class="floor"><h2>${esc(/basement|floor|level|attic|roof|garage|cellar/i.test(f)?f:f+" floor")} · ${ks.length} keypad${ks.length===1?"":"s"}</h2><div class="grid">${ks.map(([k,i])=>{
       const p=plate(k),nb=k.cols.reduce((a,b)=>a+b,0);
-      return `<div class="kp" tabindex="0" role="button" data-i="${i}" aria-label="Edit keypad ${esc(k.n)}"><div class="wallbox ${wallCls()}">${p.html}</div><div class="cap"><b>Keypad ${esc(k.n)}<span class="tag">${nb}-button</span></b><small>${esc(k.loc||"")}</small>${p.bad.length?`<span class="warn">Too long for Lutron: ${p.bad.map(esc).join(", ")}</span>`:""}<span class="edit">Tap to edit</span></div></div>`}).join("")}</div></section>`;
+      return `<div class="kp" tabindex="0" role="button" data-i="${i}" aria-label="Edit keypad ${esc(k.n)}"><div class="wallbox ${wallCls(k)}">${p.html}</div><div class="cap"><b>Keypad ${esc(k.n)}<span class="tag">${nb}-button</span></b>${k.finish?`<small class="own">${esc(finName(k.finish))} (own finish)</small>`:""}<small>${esc(k.loc||"")}</small>${p.bad.length?`<span class="warn">Too long for Lutron: ${p.bad.map(esc).join(", ")}</span>`:""}<span class="edit">Tap to edit</span></div></div>`}).join("")}</div></section>`;
   }).join("")||`<p class="hint">No keypads yet. Tap “+ Add keypad”${MODE==="builder"?", or paste them from the Google Sheet above":""}.</p>`;
 }
 function segItems(id,items,key){
@@ -93,7 +94,10 @@ function openEd(i){cur=i;const k=D.kp[i];
   $("floorList").innerHTML=floors().map(f=>`<option value="${esc(f)}">`).join("");
   const sel=$("edLay"),ln=layName(k.cols);
   if(![...sel.options].some(o=>o.value===ln))sel.insertAdjacentHTML("beforeend",`<option value="${ln}">${ln}</option>`);
-  sel.value=ln;buildInputs();edPreview();
+  sel.value=ln;
+  const pfn=MODE==="builder"?st.finish:PF;
+  $("edFin").innerHTML=`<option value="">Same as project (${esc(finName(pfn))})</option>`+FIN.map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join("");
+  $("edFin").value=k.finish||"";buildInputs();edPreview();
   if(ed.showModal)ed.showModal();else ed.setAttribute("open","");
 }
 function buildInputs(){const k=D.kp[cur];let idx=0;const nc=k.cols.length;
@@ -109,11 +113,12 @@ function checkInputs(){const k=D.kp[cur];
     m.textContent=ln?(ln.length===2?"Fits on 2 lines: "+ln.join(" / "):"Fits on 1 line"):"Too long for Lutron's engraving (2 lines max). Shorten it or add a space to split it.";
   });
 }
-function edPreview(){$("edPv").className="pv "+wallCls();$("edPv").innerHTML=plate(D.kp[cur]).html}
+function edPreview(){$("edPv").className="pv "+wallCls(D.kp[cur]);$("edPv").innerHTML=plate(D.kp[cur]).html}
 function changed(){save();render();if(cur>=0)edPreview();toast("Saved on this device")}
 $("edCols").addEventListener("input",e=>{const i=e.target.dataset.b;if(i===undefined)return;D.kp[cur].labels[+i]=e.target.value;checkInputs();changed()});
 $("edN").addEventListener("input",e=>{D.kp[cur].n=e.target.value;$("edTitle").textContent="Keypad "+e.target.value;changed()});
 $("edLoc").addEventListener("input",e=>{D.kp[cur].loc=e.target.value;changed()});
+$("edFin").addEventListener("change",e=>{if(e.target.value)D.kp[cur].finish=e.target.value;else delete D.kp[cur].finish;changed()});
 $("edFloor").addEventListener("change",e=>{D.kp[cur].floor=e.target.value.trim()||"No floor";changed()});
 $("edLay").addEventListener("change",e=>{const k=D.kp[cur];k.cols=parseLayout(e.target.value);
   const n=k.cols.reduce((a,b)=>a+b,0);k.labels=k.labels.slice(0,n);while(k.labels.length<n)k.labels.push("");buildInputs();changed()});
@@ -146,7 +151,9 @@ function parseTable(text){
     const labels=r.slice(4,13);while(labels.length&&!labels[labels.length-1])labels.pop();
     let cols=parseLayout(r[3]);if(!cols)cols=guessLayout(labels.length);
     const n=cols.reduce((a,b)=>a+b,0);const lb=labels.slice(0,n);while(lb.length<n)lb.push("");
-    kp.push({n:r[0]||String(kp.length+1),floor:r[1]||"First",loc:r[2]||"",cols,labels:lb});
+    const k={n:r[0]||String(kp.length+1),floor:r[1]||"First",loc:r[2]||"",cols,labels:lb};
+    const fv=(r[13]||"").toLowerCase();const fm=FIN.find(f=>f[1].toLowerCase()===fv||f[0]===fv);if(fm)k.finish=fm[0];
+    kp.push(k);
   }
   return kp;
 }
@@ -186,7 +193,8 @@ $("sendBtn").addEventListener("click",async()=>{
   $("sdWarn").innerHTML=bad.length?`<div class="banner">Still too long for Lutron: ${bad.map(esc).join(", ")}. You can send anyway, but these need shortening before ordering.</div>`:"";
   const subj=(D.title||"Project")+" keypad changes";
   const fn=(FIN.find(f=>f[0]===PF)||[0,PF])[1];
-  const body="Here are my keypad changes (finish: "+fn+"). Open this link and use the same email as before:\n\n"+url+"\n";
+  const own=D.kp.filter(k=>k.finish).map(k=>"Keypad "+k.n+": "+finName(k.finish));
+  const body="Here are my keypad changes (finish: "+fn+(own.length?"; different finish on "+own.join(", "):"")+"). Open this link and use the same email as before:\n\n"+url+"\n";
   $("sdMail").href="mailto:"+encodeURIComponent(D.replyTo||"")+"?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body);
   $("sdCopy").onclick=()=>copy(url);
 });
@@ -195,8 +203,8 @@ async function copy(t){try{await navigator.clipboard.writeText(t);toast("Link co
 // ---------- CSV, print, reset ----------
 $("csvBtn").addEventListener("click",()=>{
   const q=v=>/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':String(v);
-  const rows=[["Keypad","Floor","Location","Layout",...Array.from({length:9},(_,i)=>"Button "+(i+1))]];
-  D.kp.forEach(k=>rows.push([k.n,k.floor,k.loc,layName(k.cols),...Array.from({length:9},(_,i)=>k.labels[i]||"")]));
+  const rows=[["Keypad","Floor","Location","Layout",...Array.from({length:9},(_,i)=>"Button "+(i+1)),"Finish (if different)"]];
+  D.kp.forEach(k=>rows.push([k.n,k.floor,k.loc,layName(k.cols),...Array.from({length:9},(_,i)=>k.labels[i]||""),k.finish?finName(k.finish):""]));
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([rows.map(r=>r.map(q).join(",")).join("\r\n")],{type:"text/csv"}));
   a.download=(D.title||"keypads").replace(/[^\w -]/g,"")+" keypads.csv";document.body.appendChild(a);a.click();a.remove();
 });

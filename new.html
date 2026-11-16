@@ -6,102 +6,40 @@
 <meta name="robots" content="noindex">
 <meta name="referrer" content="no-referrer">
 <link rel="icon" href="icons/icon-192.png">
-<title>New keypad project</title>
+<title>Keypads team</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="app.css">
 </head>
 <body data-mode="builder">
-<template id="builderTpl">
-  <div class="panel">
-    <h2>1. Project</h2>
-    <div class="grid2">
-      <label class="f">Project name<input id="bTitle" placeholder="40 Bedford Street" autocomplete="off"></label>
-      <label class="f">Client's email (opens the link)<input id="bClient" type="email" placeholder="client@example.com" autocomplete="off"></label>
-      <label class="f">Your email (where changes come back)<input id="bReply" type="email" placeholder="you@audio1975.com" autocomplete="email"></label>
-    </div>
-  </div>
-  <div class="panel">
-    <h2>2. Keypads</h2>
-    <p class="small">In the Alisse Google Sheet, open the Keypads tab, select the rows (Keypad through Button 9, headers OK), copy, and paste here. Or skip this and use “+ Add keypad”.</p>
-    <textarea class="paste" id="bPaste" placeholder="Paste rows from the Keypads tab here"></textarea>
-    <div class="actions"><button type="button" class="btnx" id="bImport">Import pasted rows</button>
-      <label class="btnx" style="display:inline-flex;align-items:center;gap:6px">Or open a CSV file<input type="file" id="bFile" accept=".csv,.tsv,.txt,text/csv" style="width:0;height:0;opacity:0;position:absolute"></label></div>
-    <p class="small">Importing replaces the keypads below. Tap any keypad to fix it.</p>
-  </div>
-  <div class="panel">
-    <h2>3. Client link</h2>
-    <div class="actions"><button type="button" class="btnx primary" id="bMake">Make client link</button></div>
-    <p class="err" id="bErr" style="color:#b42318;font-weight:600;font-size:13px;margin:0"></p>
-    <div id="bOut" hidden style="display:flex;flex-direction:column;gap:10px">
-      <div class="linkbox" id="bLink"></div>
-      <div class="actions"><a class="btnx primary" id="bMail" style="text-decoration:none">Email to client</a><button type="button" class="btnx" id="bCopy">Copy link</button><a class="btnx" id="bOpen" target="_blank" rel="noopener" style="text-decoration:none">Open it</a></div>
-      <p class="small">The link only opens with the client's email. If you change anything below, make the link again.</p>
-    </div>
-  </div>
-</template>
-<div class="wrap" id="app" hidden>
-  <div class="top">
-    <div>
-      <h1 id="title">Keypads</h1>
-      <p class="sub" id="subline">Set up a project, then send the client a link they can edit. Tap any keypad to change it. <a href="#" id="helpLink" hidden onclick="return false">How this works</a></p>
-    </div>
-    <div class="actions">
-      <button type="button" class="btnx" id="addBtn">+ Add keypad</button>
-      <button type="button" class="btnx primary" id="sendBtn">Send changes</button>
-    </div>
-  </div>
-  <div id="banner"></div>
-  <div id="builder"></div>
-  <div class="bar" role="group" aria-label="Mockup options">
-    <div class="ctl"><span id="finLabel">Finish</span><div class="seg" id="finish"></div><div id="finNote" class="finnote"></div></div>
-    <div class="ctl"><span>Case</span><div class="seg" id="case"></div></div>
-    <div class="ctl"><span>Text size</span><div class="seg" id="size"></div></div>
-    <div class="ctl"><span>Floor</span><div class="seg" id="floorSel"></div></div>
-  </div>
-  <div id="out"></div>
-  <p class="note">Engraving is checked like Lutron's engraving tool (Helvetica, centered, 2 lines max). Names that are too wide show in red. Changes save in this browser until they're sent. This is a mockup for checking layout and wording; colors on screen are approximate.</p>
-  <p class="note"><button type="button" class="btnx" id="csvBtn">Download for Google Sheet (CSV)</button> <button type="button" class="btnx" id="printBtn">Print</button> <button type="button" class="btnx danger" id="resetBtn">Undo all my changes</button></p>
-</div>
-
-<dialog id="ed" aria-labelledby="edTitle"><form method="dialog" class="dlg" id="edForm">
-  <h3 id="edTitle">Keypad</h3>
-  <div class="pv" id="edPv"></div>
-  <div class="row3">
-    <label class="f">Keypad #<input id="edN" autocomplete="off"></label>
-    <label class="f">Location<input id="edLoc" autocomplete="off"></label>
-    <label class="f">Floor<input id="edFloor" list="floorList" autocomplete="off"></label>
-    <label class="f">Layout<select id="edLay"></select></label>
-  </div>
-  <datalist id="floorList"></datalist>
-  <div class="cols" id="edCols"></div>
-  <div class="dfoot">
-    <div class="r"><button type="button" class="btnx danger" id="edDel">Delete keypad</button><button type="button" class="btnx" id="edDup">Duplicate</button></div>
-    <div class="r"><button type="submit" class="btnx primary">Done</button></div>
-  </div>
-</form></dialog>
-
-<dialog id="sd" aria-labelledby="sdTitle"><form method="dialog" class="dlg">
-  <h3 id="sdTitle">Send your changes</h3>
-  <p style="margin:0;line-height:1.5" id="sdText">This makes a link that opens the keypads exactly as you have them now. It opens with the same email as before.</p>
-  <div id="sdWarn"></div>
-  <div class="actions">
-    <a class="btnx primary" id="sdMail" href="#" style="text-decoration:none">Email changes</a>
-    <button type="button" class="btnx" id="sdCopy">Copy link</button>
-  </div>
-  <div class="dfoot"><span></span><div class="r"><button type="submit" class="btnx">Close</button></div></div>
-</form></dialog>
-<dialog id="help" aria-labelledby="helpTitle"><form method="dialog" class="dlg">
-  <h3 id="helpTitle">How this works</h3>
-  <ol class="steps">
-    <li><b>These are your keypads</b>, drawn the way they'll look on the wall in your project's finish (marked ★).</li>
-    <li><b>Tap any keypad</b> to change what the buttons say. A name turns red if it's too long to engrave; shorten it or add a space so it fits on two lines.</li>
-    <li><b>Your changes save on this device</b> as you go, so you can come back to this link later.</li>
-    <li><b>When you're done, tap “Send changes”</b> to email them to us.</li>
-  </ol>
-  <p class="small">You can tap other finishes at the top to compare. To pick a different one, tap it, then “Use … for my project”.</p>
-  <div class="dfoot"><span></span><div class="r"><button type="submit" class="btnx primary">Got it</button></div></div>
-</form></dialog>
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="app.js"></script>
+<div class="wrap" id="lock"><div class="gate">
+  <h1>Team only</h1>
+  <form id="lockForm" style="display:flex;flex-direction:column;gap:12px">
+    <p>Enter the team passcode to make a new keypad project.</p>
+    <label class="f">Passcode<input id="lockPass" type="password" autocomplete="current-password" required></label>
+    <button class="btnx primary" id="lockBtn" type="submit">Unlock</button>
+    <p class="err" id="lockErr" role="alert"></p>
+  </form>
+</div></div>
+<script>
+(function(){
+const SALT="SZYgMuMg54F4gwNtJbobJw==",IV="+JLa36fFl5TcaoP/",CT="dyo5Lp6RT8kWlV2qdE5+AdQwYCuWUgQyJs37IHH2CD/k7DboeKbrHcD7gH3wYZkHAW5FQDYMQpAEKVLtCejDMxo6qgBZKWgS7RqUuNM69xxB09zZXWANxjIDBN8mIXfSDuQdZkFp1WRyVh6ea5f0N4nmmrO7F3I7SgXB2fRffu1S4ptWwdMUgacgZ6UNs+joIx3LwtpMyEwhkl+J26HrA1EfC1QVsl6BDN6wj3H+2zNWG/l5V6SIW33CfWJhSBvb21o/1IABVJLZF3TLpU5KI36uixwfBcIViMCtsv/OLwMJD1drOtqmSCXQG8uDO25MHwzDNh03erScOaL053rIYuFsbx2T0jsW5Ky2ZEutl57+BAuNgS+dodcQkASxpSNYohCpKIzG5u5yPOd2fWTH05iKPb3dDWonBz4Y0EH7pW46xyBFuMRHAm+es+IvPh05g+WQrGxijMgo7tgkgdBgcdSSXO3C994p7bdtDTDdLwd+vayaCyB23rbELYssfsHM+y/9Da5WmbioqaS6RF/vzleiaWM4YL0Ubq64nCcRMOi4a25H0j5NY6Y8hKZfmHT5f9/LduJSK8i7aSPC6D09gQjWewGjVYw363MVzIKZOFNoVBte3xC7xpdaIB9T9TtW0NkULnocxzlx7WHcksQTTzGJRg8TG1/Cpx7QtO8FY9v6/CEutagyxq/TDnjMaHQngEnYIuwbY/iMoEIPAMS8h3GN346iTTrL93oFJB6qGeDq+dvYOGVQmItM/s5Pa7s3FLYGMq/X4ysVmoa5qyrXggjTbkZiOzTZmPnN9+2g+RA9RwXZ9ijhWv+BlmxnmpjPFCSGQbpWZB0HtxKJ4EXw1gTcsbx0IJC/ISuCiA+Ch/rLxrvIi8utPk84WWrYb+YhcqrSWeIVkUuHITYqtvFHgXyBfCC//qlBZNrB8G9c2OQiAAW9OOJcZM/RzHqT4+0zSPQ5UVOdgyGLPlwTF3KbbX9cbgS1Swp5ML2fSpUD9ik+F/2QJEyeSrlpSlIsvMIJJopSlNTEvnwXzgWYO8THjFVb78Hdoe5IKQbDABmi2dMEbGIj2dlD2cJ+Lt6CTypV5XIfMSt/M3x9UktvAzmwn+QJhuj9U5Z6eN/tG2LZ/SJkgRkVjqXHFcld7orjP012dMu1LBBT0dhQBXcXwK9w+GrQn3hRtpXc1CCxwNjkLhkA9T/egw5k5V5aC8Sj2Gi9o8pPIiDpUhljF5xQfWlaOMIvThgW0qm1d6BJpb83dDxAuf4GorJY8rsiPm9a9NrphEzjtKuSGwm645G7yVGKgAJ3NoGHlyJU8rvMu6SgovXty7Fw5qO4jV1w6PqgLvrZm9upo49iFYEknsPoGOO96A+CFq/DsFYDKwoSgqA1q90qoB9dM5r1Xs67GrdCclrYtCdPZqfoe2X1+hMh1PEmFDZDP4bOG3+IZ1yTB00k6c9WXcfHzswJRJT5q3qpSvW69Uyu4RWVVkv9bybC9NKzjPElyg5cqO5Dvg38JAVI7mGRkZyx/xs9ckwMEXpNV4TtlFYhrVHJM/3nI7Sq+NlF7Kq7tiBzwGKDB/k9aGyhhQr25RNVPh+V2z/PSKXizkSjYJGCQYwa2pumV8s4/6bz9S2oq919SYd7fs367oJAsoplFIH2ztzvkpxNqQYlp6+XUPqddfzVGJD9VCUYObVLMhCBIOC9IMmlHBaPX4kUelgnQ/Fkgzs/UrVO8oM+LANgpHWUo3Lqf8eP7MEbEYjOHgT+zTB9nc513lxPjjWaxmAuWcLqKeRlY0p61EZvjCu6VQj833TIgPWPNDDaLV2Ry+L1v7hF39+/kU//kE8o1jIQ25grvfcag2pOcadGx9Iui7ZAiPpRu4jJ7w+5RGCyeaGFOiXXAWIisNbWsTQZAfs6ToV8eRFjy+0Pi2Q+sb/w9Ov5XnRjjmrJVGE19kWEbtEKzlslwOaKw4J1EbDqla4Ri5aL/B4kZN+gjRVoNySYZ8/Yv7w/wT7haxO/+ir30IWYqg41Y+cS67gBaNGjOrwz7oO5Fit1TAAPdI7yCdzQEIkhJBBh2z3vsG99aPZLw7R/tbbapg//LWul/6sAitIWHR3SYkvX5AzaY4y7Xxm9w+QH2K1JZA+genEXp0wYgcvJjAXBnGalaIQk2zPteJrUka0DI2TfA4cMVoGCIYlHSzAFL0afEWS97aGXuG0QEguNFYK7DuIaB+FlMn9NsDufQJZmtiWV3NJoI9sMlN9qyXjWZbnbv4zvTypkeVPY8/Boz1vr6J7uXf65rljIvKCgYGIHY2xQ9d2ufK+JxMtzxIS+W+/TOI28RgfDGcxs28wldGWcLiPdSVuMgE3P1gzN++BE+VLTIwsdJ/KUOB/Y8M/DLqD06LYSIVrVZiDoir0zMfYClFNzvLo4YtPmBbyYXDfnq3vfumRhzEzYlrn/HoDhIR1LR1AuJ28f8YduK8CWocWSZHMKwXN0uaTFBeEFO1a5GcwtunebSZ+c0ySNKpPJCUdqXvNsS8UzB6VnCxwbKBhlKWebAFttIT32vF1zj6aUh8wszCLpRrnLvMzyywxrbdVljJvs/XSRIbVsoF9qZ+IdpIjrh3jKdVImIfUEv+WfUVwJl62Lno/0jpKPymj2V/z/NpEy90cZz5ECp3WWzIBQoobguMA2T3wQQ61xzHX3wgZ9N/ZaueD3PR0b7/f2dWGxXYKns+rAQ0OGViY6prtXbfsNMd42q8fdrP/8K8osvu/AJ8qq+XFRTh+77qNqBdTgqaeo+My6xMeKgzHxq9AdN5VLDIExPfDPnvjrgHL5oNS9b4CWE5vLRtY+oHEad84V6cKRECW0cgCH9BOgavatUIua6B/+92ArM58KxBI5blMsLJeI0hhCrH84cJ7OGcOXZ2mFPOJ3fBsBu/Gvpan1xWjhZ0KibrcAmLnAme8GiOC4N3nYtiS2YURT0nRf6loN0YCy0M2M73LRbXtBTPNCnuOylz4wyzO5KCWFa3jtygHP9j4ttGOZrXy6EVkgCYlqcxc3xZ9SiQDfAOyxC7+/WCtuQHM9aGxrPdlLtq+zy5VE66T6R65RXmhPmgJR92RoC8y48KdVyHLBnsOmtxWc3Ndo+U+MlwxX4NpLae/XBySJanA1A7dZbZLSuGWMyaAUyWreJ8baoVrvXCWbqdSib0pD8L6XQKGXvSx/w+pMT5CD/dSfnVqkPxt5ht/yxL6MafPNLlAaREEEWP2nGPYsWw91pgxHzThHKTevPBcoP9X7fgnbCFxQ9qSvh9EkxdkUD8gqoJgeHN3ysd+/apHhSOjdBZZhYK0kYivwI4+q0RPy/O5du6b803weZnabeSKBMeWUW7ORoqzxDNTqgfJU2v2YSJfm7YxQuSkOVm5SAOPKEi1UYABwkxs4zEgzwPPlR0GlwJhD3uOrgZ0105lGyY76zYMETtuKmvuzcSWOxPOgMwNxTEJuuo1H3m/DK+dC3u+I7pCCM3ihbT431tr472UQaETmiihsT7XlWkv93hOOKqSpo1d5Aq+W9UCed3YUFleXaucBjHVhVKIbBfzSpO6DYwATPvC+kv2E1oTinMkByY8GgSIfH44PShYCJt3vvXs4eQ/mQXtNIVy8KvCoxLepNwksg0kZ1eO+xWTNKv7G9ded39i1IjvnCu5l2/ghLc5G7+dqVBtkNAgNsaZOt2NfIbz8fZ7rvNX4woy8nV1CoA7JuwRf+CLtqSIYixwJtaRn9BUjTvg+tId2ndCnm7jT3RoA+y1T0U+AeT5rfzuidJhsHb9LXF0LzQS9rCO4g7ehzwjLCem/NS3Mb/JQaAvWHztQcN7d6/1ReXHLVCnJfDjLW8O8OgKY6ILES3scBIe7nKxYPpiNIXrmBbPHRD9uj8X0H0BMv/JtWtXPmZY7gs5oIu1A/+GaD8rMQmyw4nZxz4oV4davp1lKsOsa6SSc882CBO267lquhoEvMkvzGHvGMSGqYQ70iKVXEeVOruokFYZYPzcbhtZOaJxzxOZ+iig4h8tt/qrMZbayYFBq+sT10J4actsgol3ZpqGovLHN+TtbIW3RrerpodzexGa7ErW97oqS8PzFSmNepZlSOQ+V2qZGwMx5geAcXX3l0lZGhM8VIBkkFBKA3rZHC6elrTv1ggkkRThXdA66BQluyQv274ZrHqyrUXFC7U4dD+keV7dH3TZy/jFnEuvfLHYCWwoVY7Hc1YyLqSfHsNZKconOVdONcWl5W3ML3A9LqoaFhxDjQcNdnhs6tPC8GmcMS9AFHeCmGx1x5MUwwIuQuRqORlHO1T2ptzaWlBKCscukLy4HvmZIfPNt7qVHRHDl0dO3LOOA6cCmnoU5t+b3OTxrLFTBnOHVescMpQff4GOt9gsEflPa9XlRwPXnDkaxb0Za/PGn7tahuChxDQEHXynHf42YWSgwMix6P/TXBPy9YZDgqJHA6Cr2uhXAF0s4oR1OFLXdeZSK7BS9XeMlDKYGszc3Qq9I9b1SoSGmy5dmHvNUBI/dBPC6cuBPhjEbyYRfS5gtGJI0ZvsycSyMzu5AN08pFlggYolRqubvKlQMsBPi6fNKZqNWCBEEqFiQprur3w8C/ICOa/PVYHyAnFESxwpiI7F6bTZ19624PxG2u6cAFYaS3Gb7hvLVIcTiOWrmPMV+R2gWogAOF4AJrU2HfCac5uoOxgzWmMoWx3ITr9SbNEG3H499MHwQZ9m4MGqCQ3MdDNwoQowkF4d+QyvIiGfAMevdEAxdmg8I5kMgzWvtDlh8RjjcqnnY51yf7VoK1CMWD8zlrqwMTUT1yN1gaAyeR6G02n7akXBCzgEYaMtJz5anKCjD3yDbGWLBVUowTjoTVWA4gMppqnY3eDEglBPA27z2QedYRcJXUxTSwRYSwj/a0qGe9QDbWLU2pwEM9Shav1O1CM/H4dHl8cvlxoSbmElcf3zJVx7004IrwVXHkWqdRNzfnhzL1NfqAV2rnJGjqrZ+p/kJfZL+naTmh3Hmcxk6RDhT/+k8tnNtkBc8V5fVboZ8Zk3+7gcMh7KplKiUzDAq//0AG1iTdBD3YVYWKdO+iOxUO8QKKdEEiiuKEC1fpeMM5p//4ctTFFPjCrW6Q9bfAVvpPO0DESLNUmZVI8zyet1/F0G1QFTirgutaKwxn3i52192jUFt/PdHNOWtrRDb3W68JJ4ajNA+CsKBruzYmIlvqmW2GgRw2ZzkL7EoUWF6YbG5ihHrwRzrkym0wZ11QMhBOx9asV8AJ2yi+qFfypFRuv9JozdQTMhsh0dy2dRwKtl86geiy73PvRGeCbQNuNVr4pJLvCi65Fws/S3BUVshfmDTeuFOkR8Gou81OLo4jHah/v8IBjXV9wD1zG4IDXFuxLClrAf059hdmhiaOGNdXoRD8d0xsb3nTN7zRxhN3vcdjWAxAuOVuPHAUWdwgnIpvjCulWf5bHrFtbP2u0d9PAzrv9jhXDxgs1e2/DCSEHmBydJ1BYubHKx9ulZTaQzLgQWY+m2Lq1MI9a31GoZzf/dAS2EskYTIfUrZv+HZg6nOhF+/quOa0QcLlbAqZ505Yc1oT+N//kyzNGpR1A3l75KMXdZqWyVSvyUoDmGhUpZVzHGiK4DB20g0kHHRc6c7aqE7eW3TX8Fbh5ZUH/LExtyfnhkDGMZ9tomrMjzeuIS89hhjdvOGF7+kgpInIprpOu/RhXiexEiEVbnNg9KagAaM+6sUWdiM1kfi96t/p40t+ugibd5Kwtw+iSw7lruIRu1OKZC/xNZkxJHrlKRN7f63x4tNA0XKck8VZ2YyUDO6tgsa2gktiTrQim3edebqNrsuJKJdW2fFpK3jeOQybWGp11aezEjI5ZVHkhVtLPMvL2FOFhAzFEZWPzxpYHJoPAgThvEAMELQvClxP7Z/0U8bSZ/hQ1cfQPn8ImIAAyXfxDqeN97rbKX7Qh765Am5JGLMCxaQ0i4BKHBD96Hrl950bMylYizXfvY2BLHXhQXXB4f3OI/tXTC8IGj6GTHi74cLtIpaWg5ZCbHq0Wjow+dGWDqBruoXL/Vzegz8J7nBkcuj8dUHqcuNhyyU7dlNHjAribKPiEt2rS0bNqXY6NhVlAdKq+wdebURtkCjM82yhDM3Wekum6RzLuSvAWkymxh22A5Vt1o7IesxR1hqZ7Kb00NqrOWURAa05qCrBd2t/guuuVWzCtIX+Ww12UaCBPUFKRAxUxhduJT0FBOjfFKPrnFe8XfnGovvdv8RsoEwwW3Wry5WONyqbSHF5Zv0VO6FNastqNmLdGgWJuTkBAdPv9FmBy1OzpGxWag9eTbo0Ym/QaNkwSRh/2a5vWi3oArqW5gSe917z5xrRhxmqIKHTTq4Zm48iE+ppiciHhDoQsm4yyBmaIE42izxM/b4Y3/HTUJBcfA5YFH7d1lYmRmnwWr2hfaZMHh5WP8gHA5gnuaFYU8oTuq5WCpRVFuk+6xXT4XS86YYjExENm+fp1EEwKehJFShOUQltLwNZXfMqfR99eY4OXoD6lsAeaWDl8SiPZaj6eCmMuzKe82dzph2e4DCZLXRr6e+KQPjq7krKdgE52WS6XbiPo69Tq7Hvz3zCYc0q3m0yqjPr9DhqopRNfrnAU3+JHnyKjJCrNVxlGiNoVzwLwmrNIXQaTmPZLA3+foCMGWhhSG2gC6IuK8Iuh2xGVP4T8kEUST7Qftw97BME9JdPjjZYSzEa1rtvhaAcRsjH7IPBNrUlEth5fnzfwdQbCMoIgRiw/AsyYbZ83/OenW2z3LzziMRQ5zNUUl/Al/IXM8YOdavS1ZIiVoVEx3iORg9OGcIzSf/8W0r3Lb1cZPdSWoivn5pSXxi0cv5Ic77MG7CT6l42OSYP6wB4n+ArAHnsCogat4n/ygrRCUzA7HaxJu0N/xrrd9hfysbd6llSNP16Z44P01t6dmN9J24lVX6lBxIr+e6t8pb6AQ/qJ7wMjjJeXjOlF8uTWfCfds1EAiMZg9eS4mZ0HQNetz9P4ULPZqnXsCnwdm+iCIyzT1oWzLjOQwdnVXDITTf55FKlFaE5C3U0c7oazvIYhDHgy55P6I66TfOHfUVIt10f3W/TbTSkxUegeSj0U8YbfpJEdIQ0/R4fn75jdvii4wNYdtUMrMCYRJVPwGcw94vDaPjRXJzqocRQx/qIvUs8xCLKjzSndRIlsfIXYv8V5OqlJMeEzP9RYygsi2deVv2SHfvkowPCc8mwdqU0Sq06cqAG3D4kbuq7sZ1eZtS/Iiv2iKgpHcjAEv2+4Us3NaxrtBll0bKHZlLewSKLPkDVuYdxvuRk07UvJODD/g8EAPSo/7+XDk7Q22IzF7S69rC39KNrgnyGI6xvbaZuyWNCttmtHvnrfCiY5EIUqLWBVENa+5rCs1OoE7BeY4ITxDWGcP2y9jziSOFvfQNURrY3OhsEGpP50KGvuDwdewPSkMzS2JO1IGi5CL+vC2rWfGNYz1RwUSHWJTfa1xtQuVzfi1vnjc5fvOMSUx7ouvROJ8xLLlL/3m1PliBOnAaelbZLcUNXLcVtfYhgOBcIyNWWxGZOh0wsI3oAj2sp5EcDkH9wwZqgYyrZrLcUsKNKH+Pn08NwAl56K7+elFiwyzivlCCJ7OPDmzSaZIKAW63x+qSyQwCMlgfhCiZRPXrXv2047I2CjVlbZAoJnNrIW1iGtaoRDjOcAnNTtTHo0xHPKPnbduMHQpFIWSU6LRM0ruNYZQhRdbHQSPKChYjYUrcKO5N+fGVv2XLWIHU5oJvkAgqHEk7QxPxDWVq9kSadX6kUAhtBSczRYD8DVFxCWWLzUr84glidKzueiEi0pAwule+f0oJUcBwVjCKW5T+rwhzn7xrqlSg+cDJ0hWHZF32GfK5Ns0Ps28r6vQXXXi+j8DVZ5esKcsRLGp9mocc52FCXN2vBVEP9e/We7KyT7RurdN0LV9wCplXszbM6NjFLxhwZ8SlU7poox8059njlX7hWxfut4AYeleidsSwPi0HBLiZmY7Q/tEU7H2uUyuz2EOSi9MwRiDC+dbHt31Qd0+eSBUBCFA2MYJfNnIehMPueaFZBUBnlSXKLaTAMKxk+fJ5sL75uRtoFUaJ63XK5oqGocolOcsIcb9kg8yvhtGKUZS31FPTWeHfbbINddqd7iWB8FbG1rDZMIUgYybvs16gtCmI6tIBId7E0+YrIiFNZFMd4/DKzR50JAFMTSmrr1pDyF98OSYTwFooJHS2sHwFIsMmNwIzJSwKEcs0IIL2MuC75eu5jaRb29nXZ4jUFVkIXTBBOam9v79nwLOcUwOsqG0QuxDnE9jeMokF2JEEnT6Po9BPEomnuzjcwqVRAyu3E7OMg/7dOHe8OAkdYS8Ut2/B2J56HjyU7MLgwPee9Wl++1c4Rgc9I+CUu8j8ihZrEs8U9A5ENo1XSvl+eOqx95ysLV7qBuwKZaHP";
+const u8=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function unlock(pass){
+  const base=await crypto.subtle.importKey("raw",new TextEncoder().encode(pass),"PBKDF2",false,["deriveKey"]);
+  const key=await crypto.subtle.deriveKey({name:"PBKDF2",salt:u8(SALT),iterations:250000,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["decrypt"]);
+  return new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:u8(IV)},key,u8(CT)));
+}
+async function go(pass,quiet){
+  let html;try{html=await unlock(pass)}catch(e){if(!quiet)document.getElementById("lockErr").textContent="That passcode isn't right.";return false}
+  try{localStorage.setItem("kpTeamPass",pass)}catch(e){}
+  document.getElementById("lock").remove();document.body.insertAdjacentHTML("beforeend",html);
+  const s=document.createElement("script");s.src="app.js";document.body.appendChild(s);return true;
+}
+let saved=null;try{saved=localStorage.getItem("kpTeamPass")}catch(e){}
+(saved?go(saved,true):Promise.resolve(false)).then(ok=>{if(!ok)document.getElementById("lockPass").focus()});
+document.getElementById("lockForm").onsubmit=async e=>{e.preventDefault();const b=document.getElementById("lockBtn");b.disabled=true;document.getElementById("lockErr").textContent="Unlocking…";
+  const ok=await go(document.getElementById("lockPass").value,false);if(!ok)b.disabled=false};
+})();
+</script>
 </body>
 </html>
