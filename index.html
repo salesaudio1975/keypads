@@ -4,15 +4,78 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
 <link rel="icon" href="icons/icon-192.png">
 <title>Keypads</title>
-<style>
-:root{--bg:#eef0f1;--fg:#1d2328;--muted:#5f6a72}
-@media (prefers-color-scheme:dark){:root{--bg:#15191c;--fg:#e7eaec;--muted:#9aa5ad}}
-body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:560px;margin:0 auto;padding:64px 16px}
-h1{font-size:24px;margin:0 0 8px}p{color:var(--muted);margin:0}
-</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="app.css">
 </head>
-<body><main><h1>Keypad mockups</h1><p>Open the link you were sent for your project's keypads.</p></main></body>
+<body data-mode="client">
+<div class="wrap"><div class="gate" id="gate" hidden>
+  <h1>Your keypads</h1>
+  <form id="gateForm" style="display:flex;flex-direction:column;gap:12px">
+    <p>Enter the email address this link was sent to.</p>
+    <label class="f">Email<input id="gateEmail" type="email" autocomplete="email" inputmode="email" required></label>
+    <button class="btnx primary" id="gateBtn" type="submit">Open keypads</button>
+    <p class="err" id="gateErr" role="alert"></p>
+  </form>
+  <div id="gateLanding" hidden>
+    <p>Open the link you were sent for your project's keypads.</p>
+    <p style="margin-top:12px"><a class="btnx primary" id="gateLast" hidden style="text-decoration:none;display:inline-block">Open my keypads</a></p>
+  </div>
+</div></div>
+<div class="wrap" id="app" hidden>
+  <div class="top">
+    <div>
+      <h1 id="title">Keypads</h1>
+      <p class="sub" id="subline">Lutron Alisse keypads. Tap any keypad to change its button names or layout.</p>
+    </div>
+    <div class="actions">
+      <button type="button" class="btnx" id="addBtn">+ Add keypad</button>
+      <button type="button" class="btnx primary" id="sendBtn">Send changes</button>
+    </div>
+  </div>
+  <div id="banner"></div>
+  <div id="builder"></div>
+  <div class="bar" role="group" aria-label="Mockup options">
+    <div class="ctl"><span>Finish</span><div class="seg" id="finish"></div></div>
+    <div class="ctl"><span>Case</span><div class="seg" id="case"></div></div>
+    <div class="ctl"><span>Text size</span><div class="seg" id="size"></div></div>
+    <div class="ctl"><span>Floor</span><div class="seg" id="floorSel"></div></div>
+  </div>
+  <div id="out"></div>
+  <p class="note">Engraving is checked like Lutron's engraving tool (Helvetica, centered, 2 lines max). Names that are too wide show in red. Changes save in this browser until they're sent. This is a mockup for checking layout and wording; colors on screen are approximate.</p>
+  <p class="note"><button type="button" class="btnx" id="csvBtn">Download for Google Sheet (CSV)</button> <button type="button" class="btnx" id="printBtn">Print</button> <button type="button" class="btnx danger" id="resetBtn">Undo all my changes</button></p>
+</div>
+
+<dialog id="ed" aria-labelledby="edTitle"><form method="dialog" class="dlg" id="edForm">
+  <h3 id="edTitle">Keypad</h3>
+  <div class="pv" id="edPv"></div>
+  <div class="row3">
+    <label class="f">Keypad #<input id="edN" autocomplete="off"></label>
+    <label class="f">Location<input id="edLoc" autocomplete="off"></label>
+    <label class="f">Floor<input id="edFloor" list="floorList" autocomplete="off"></label>
+    <label class="f">Layout<select id="edLay"></select></label>
+  </div>
+  <datalist id="floorList"></datalist>
+  <div class="cols" id="edCols"></div>
+  <div class="dfoot">
+    <div class="r"><button type="button" class="btnx danger" id="edDel">Delete keypad</button><button type="button" class="btnx" id="edDup">Duplicate</button></div>
+    <div class="r"><button type="submit" class="btnx primary">Done</button></div>
+  </div>
+</form></dialog>
+
+<dialog id="sd" aria-labelledby="sdTitle"><form method="dialog" class="dlg">
+  <h3 id="sdTitle">Send your changes</h3>
+  <p style="margin:0;line-height:1.5" id="sdText">This makes a link that opens the keypads exactly as you have them now. It opens with the same email as before.</p>
+  <div id="sdWarn"></div>
+  <div class="actions">
+    <a class="btnx primary" id="sdMail" href="#" style="text-decoration:none">Email changes</a>
+    <button type="button" class="btnx" id="sdCopy">Copy link</button>
+  </div>
+  <div class="dfoot"><span></span><div class="r"><button type="submit" class="btnx">Close</button></div></div>
+</form></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="app.js"></script>
+</body>
 </html>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="icons/icon-192.png">
+<title>New keypad project</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+<body data-mode="builder">
+<template id="builderTpl">
+  <div class="panel">
+    <h2>1. Project</h2>
+    <div class="grid2">
+      <label class="f">Project name<input id="bTitle" placeholder="40 Bedford Street" autocomplete="off"></label>
+      <label class="f">Client's email (opens the link)<input id="bClient" type="email" placeholder="client@example.com" autocomplete="off"></label>
+      <label class="f">Your email (where changes come back)<input id="bReply" type="email" placeholder="you@audio1975.com" autocomplete="email"></label>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>2. Keypads</h2>
+    <p class="small">In the Alisse Google Sheet, open the Keypads tab, select the rows (Keypad through Button 9, headers OK), copy, and paste here. Or skip this and use “+ Add keypad”.</p>
+    <textarea class="paste" id="bPaste" placeholder="Paste rows from the Keypads tab here"></textarea>
+    <div class="actions"><button type="button" class="btnx" id="bImport">Import pasted rows</button>
+      <label class="btnx" style="display:inline-flex;align-items:center;gap:6px">Or open a CSV file<input type="file" id="bFile" accept=".csv,.tsv,.txt,text/csv" style="width:0;height:0;opacity:0;position:absolute"></label></div>
+    <p class="small">Importing replaces the keypads below. Tap any keypad to fix it.</p>
+  </div>
+  <div class="panel">
+    <h2>3. Client link</h2>
+    <div class="actions"><button type="button" class="btnx primary" id="bMake">Make client link</button></div>
+    <p class="err" id="bErr" style="color:#b42318;font-weight:600;font-size:13px;margin:0"></p>
+    <div id="bOut" hidden style="display:flex;flex-direction:column;gap:10px">
+      <div class="linkbox" id="bLink"></div>
+      <div class="actions"><a class="btnx primary" id="bMail" style="text-decoration:none">Email to client</a><button type="button" class="btnx" id="bCopy">Copy link</button><a class="btnx" id="bOpen" target="_blank" rel="noopener" style="text-decoration:none">Open it</a></div>
+      <p class="small">The link only opens with the client's email. If you change anything below, make the link again.</p>
+    </div>
+  </div>
+</template>
+<div class="wrap" id="app" hidden>
+  <div class="top">
+    <div>
+      <h1 id="title">Keypads</h1>
+      <p class="sub" id="subline">Set up a project, then send the client a link they can edit. Tap any keypad to change it.</p>
+    </div>
+    <div class="actions">
+      <button type="button" class="btnx" id="addBtn">+ Add keypad</button>
+      <button type="button" class="btnx primary" id="sendBtn">Send changes</button>
+    </div>
+  </div>
+  <div id="banner"></div>
+  <div id="builder"></div>
+  <div class="bar" role="group" aria-label="Mockup options">
+    <div class="ctl"><span>Finish</span><div class="seg" id="finish"></div></div>
+    <div class="ctl"><span>Case</span><div class="seg" id="case"></div></div>
+    <div class="ctl"><span>Text size</span><div class="seg" id="size"></div></div>
+    <div class="ctl"><span>Floor</span><div class="seg" id="floorSel"></div></div>
+  </div>
+  <div id="out"></div>
+  <p class="note">Engraving is checked like Lutron's engraving tool (Helvetica, centered, 2 lines max). Names that are too wide show in red. Changes save in this browser until they're sent. This is a mockup for checking layout and wording; colors on screen are approximate.</p>
+  <p class="note"><button type="button" class="btnx" id="csvBtn">Download for Google Sheet (CSV)</button> <button type="button" class="btnx" id="printBtn">Print</button> <button type="button" class="btnx danger" id="resetBtn">Undo all my changes</button></p>
+</div>
+
+<dialog id="ed" aria-labelledby="edTitle"><form method="dialog" class="dlg" id="edForm">
+  <h3 id="edTitle">Keypad</h3>
+  <div class="pv" id="edPv"></div>
+  <div class="row3">
+    <label class="f">Keypad #<input id="edN" autocomplete="off"></label>
+    <label class="f">Location<input id="edLoc" autocomplete="off"></label>
+    <label class="f">Floor<input id="edFloor" list="floorList" autocomplete="off"></label>
+    <label class="f">Layout<select id="edLay"></select></label>
+  </div>
+  <datalist id="floorList"></datalist>
+  <div class="cols" id="edCols"></div>
+  <div class="dfoot">
+    <div class="r"><button type="button" class="btnx danger" id="edDel">Delete keypad</button><button type="button" class="btnx" id="edDup">Duplicate</button></div>
+    <div class="r"><button type="submit" class="btnx primary">Done</button></div>
+  </div>
+</form></dialog>
+
+<dialog id="sd" aria-labelledby="sdTitle"><form method="dialog" class="dlg">
+  <h3 id="sdTitle">Send your changes</h3>
+  <p style="margin:0;line-height:1.5" id="sdText">This makes a link that opens the keypads exactly as you have them now. It opens with the same email as before.</p>
+  <div id="sdWarn"></div>
+  <div class="actions">
+    <a class="btnx primary" id="sdMail" href="#" style="text-decoration:none">Email changes</a>
+    <button type="button" class="btnx" id="sdCopy">Copy link</button>
+  </div>
+  <div class="dfoot"><span></span><div class="r"><button type="submit" class="btnx">Close</button></div></div>
+</form></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="app.js"></script>
+</body>
+</html>
