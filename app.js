@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26G";   // shown at the bottom of every page; bump with each release
+const VERSION="11-17-26H";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -26,7 +26,7 @@ const METAL=[["SN","Satin Nickel","#b9b6ad"],["BN","Bright Nickel","#d4d4d0"],["
 const FG={alisse:null,
   pal:[...METAL,["CWH","Clear White Glass","#f7f7f7"],["CBL","Clear Black Glass","#111111"],...PLASTIC],
   see:[...PLASTIC,...METAL],
-  sun:[["WH","White","#fbfbf8"],["LA","Light Almond","#eee3cf"],["IV","Ivory","#f3ecd8"],["BL","Black","#1b1b1b"],["SW","Snow","#f4f4f2"],["RW","Architectural White","#ecebe6"],["BI","Biscuit","#e7dcc6"],["TP","Taupe","#a99c8a"],["MN","Midnight","#2a2d33"]],
+  sun:[["WH","White","#fbfbf8"],["LA","Light Almond","#eee3cf"],["IV","Ivory","#f3ecd8"],["BL","Black","#1b1b1b"],["SW","Snow","#f4f4f2"],["PM","Pumice","#ddd7cb"],["RW","Architectural White","#ecebe6"],["BI","Biscuit","#e7dcc6"],["TP","Taupe","#a99c8a"],["MN","Midnight","#2a2d33"]],
   pico:[["WH","White","#fbfbf8"],["SW","Snow","#f4f4f2"],["IV","Ivory","#f3ecd8"],["LA","Light Almond","#eee3cf"],["AL","Almond","#e6d6bb"],["BE","Beige","#d9c9ac"],["TP","Taupe","#a99c8a"],["GR","Gray","#9a9a98"],["BR","Brown","#5a3d2b"],["BL","Black","#1b1b1b"],["MN","Midnight","#2a2d33"]]};
 const GROUPS=["alisse","pal","see","sun","pico"],GDEF={pal:"WH",see:"WH",sun:"WH",pico:"WH"};
 const TALIAS={"see-1rl":"see-1","see-2rl":"see-2"};   // early names
@@ -131,9 +131,9 @@ function render(){
   $("out").innerHTML=(badK.length?`<div class="pagewarn" role="alert"><p><b>⚠ ${badK.length} keypad${badK.length===1?" has a name":"s have names"} too long to engrave:</b> ${badK.slice(0,6).map(k=>"keypad "+esc(k.n)+" ("+k.labels.filter(l=>tooLong(l,k)).map(l=>esc(l.trim())).join(", ")+")").join(", ")}${badK.length>6?", and "+(badK.length-6)+" more":""}. Shorten ${badK.length===1?"it":"them"} before approving.</p><button type="button" id="showBad">Show me</button></div>`:"")+(tot?`<div class="apbar${okN===tot?" done":""}"><p><b>${okN===tot?"Every keypad is approved.":"Check off each keypad when it's right."}</b> ${okN===tot?"Tap “Send changes” to send them to us. Tap a ✓ to unlock a keypad.":"Tap the ✓ in a keypad's corner to approve it and lock it. Tap it again to unlock."} <span class="apn">${okN} of ${tot} approved</span></p><div class="r">${okN<tot?`<button type="button" class="btnx primary" data-all="approve">✓ Approve all ${tot}</button>`:""}${okN?`<button type="button" class="btnx" data-all="unlock">Unlock all</button>`:""}</div></div>`:"")+fl.filter(f=>st.floor==="All"||f===st.floor).map(f=>{
     const ks=D.kp.map((k,i)=>[k,i]).filter(([k])=>(k.floor||"No floor")===f);
     const nOk=ks.filter(([k])=>k.ok).length,all=nOk===ks.length;
-    return `<section class="floor"><h2><span>${esc(/basement|floor|level|attic|roof|garage|cellar/i.test(f)?f:f+" floor")} · ${ks.length} keypad${ks.length===1?"":"s"}${nOk?` · ${all?"all ":""}${nOk} approved`:""}</span><button type="button" class="btnx apf${all?"":" go"}" data-floor="${esc(f)}" data-act="${all?"unlock":"approve"}">${all?"Unlock this floor":"✓ Approve this floor"}</button></h2><div class="grid">${ks.map(([k,i])=>{
+    return `<section class="floor"><h2><span>${esc(/basement|floor|level|attic|roof|garage|cellar|apartment|apt\b|unit|suite|penthouse|residence|building|wing|house/i.test(f)?f:f+" floor")} · ${ks.length} keypad${ks.length===1?"":"s"}${nOk?` · ${all?"all ":""}${nOk} approved`:""}</span><button type="button" class="btnx apf${all?"":" go"}" data-floor="${esc(f)}" data-act="${all?"unlock":"approve"}">${all?"Unlock this floor":"✓ Approve this floor"}</button></h2><div class="grid">${ks.map(([k,i])=>{
       const p=plate(k),own=k.finish&&finOk(grpOf(k),k.finish);
-      const lp=String(k.loc||"").split("·").map(x=>x.trim()).filter(Boolean),room=lp[0]||"No location yet",spot=lp.slice(1).join(" · ")||(f==="No floor"?"":/basement|floor|level|attic|roof|garage|cellar/i.test(f)?f:f+" floor");
+      const lp=String(k.loc||"").split("·").map(x=>x.trim()).filter(Boolean),room=lp[0]||"No location yet",spot=lp.slice(1).join(" · ")||(f==="No floor"?"":/basement|floor|level|attic|roof|garage|cellar|apartment|apt\b|unit|suite|penthouse|residence|building|wing|house/i.test(f)?f:f+" floor");
       return `<div class="kp card${k.ok?" ok":""}${p.bad.length?" toolong":""}" tabindex="0" role="button" data-i="${i}" aria-label="${k.ok?"Keypad "+esc(k.n)+", "+esc(room)+", approved":"Edit keypad "+esc(k.n)+", "+esc(room)}"><div class="khead"><span class="num${String(k.n).length>3?" long":""}">${esc(k.n)}</span><div class="kt"><b class="room">${esc(room)}</b>${spot?`<span class="spot">${esc(spot)}</span>`:""}</div><button type="button" class="okb" data-ok="${i}" aria-pressed="${!!k.ok}" title="${k.ok?"Approved. Tap to unlock":"Approve and lock this keypad"}" aria-label="${k.ok?"Unlock keypad "+esc(k.n):"Approve keypad "+esc(k.n)}">✓</button></div>${p.bad.length?`<div class="strip">⚠ Name${p.bad.length>1?"s":""} too long: <b>${p.bad.map(x=>esc(x.trim())).join(", ")}</b><span>Tap to fix</span></div>`:""}<div class="wallbox ${wallCls(k)}">${p.html}</div><div class="cap">${own?`<small class="own">${esc(finName(k.finish,grpOf(k))+codeOf(grpOf(k),k.finish))} (own finish)</small>`:""}<div class="kfoot"><span class="tag">${esc(tagOf(k))}</span>${k.ok?`<span class="appr">✓ Approved</span>`:`<span class="edit">${p.bad.length?"Tap to fix":"Tap to edit"}</span>`}</div></div></div>`}).join("")}</div></section>`;
   }).join("")||`<p class="hint">No keypads yet. Tap “+ Add keypad”${MODE==="builder"?", or paste them from the Google Sheet above":""}.</p>`;
 }
@@ -300,7 +300,7 @@ function reportToKp(rs){
     if(t)k.type=t[0];const n=k.cols.reduce((a,b)=>a+b,0);k.labels=r.labels.slice(0,n);while(k.labels.length<n)k.labels.push("");
     const g=grpOf(k);let f=findFin(g,r.color);
     if(!f){const code=(String(r.model).match(/-([A-Z]{2,3})(-[A-Z0-9]+)?$/)||[])[1];if(code)f=findFin(g,code)||findFin(g,code.slice(-2))}
-    if(f)k.finish=f;if(+r.pt>=6&&+r.pt<=20)k.pt=+r.pt;return k});
+    if(f)k.finish=f;if(+r.pt>=6&&+r.pt<=20)k.pt=+r.pt;if(r.ocr)k.ocr=1;return k});
 }
 // most common finish in each family becomes the project finish; keypads that match it drop their own
 function adoptFinishes(){for(const g of GROUPS){const ks=D.kp.filter(k=>grpOf(k)===g&&k.finish);if(!ks.length)continue;
@@ -327,8 +327,24 @@ function loadPdfjs(){return pdfjsP||(pdfjsP=new Promise((ok,no)=>{const s=docume
 async function readReport(file){
   const lib=await loadPdfjs();const doc=await lib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;const pages=[];
   for(let i=1;i<=doc.numPages;i++){const tc=await (await doc.getPage(i)).getTextContent();pages.push(tc.items.map(it=>({s:it.str,x:it.transform[4],y:it.transform[5],h:it.height,w:it.width})))}
-  return reportToKp(window.parseReport(pages));
+  const rs=window.parseReport(pages);
+  // Sunnata (and some other) reports draw button names as pictures: read them
+  const need=[...new Set(rs.filter(r=>!r.labels.some(l=>String(l).trim())).map(r=>r.pg))];
+  if(need.length){
+    try{if(!window.kpOcr)await loadScript("ocr.js?v="+VERSION);
+      let done=0;
+      for(const pg of need){toast("Reading button names from the report pictures… "+(++done)+" of "+need.length);
+        const page=await doc.getPage(pg+1);const ims=(await window.kpOcr.pageImages(page,lib)).filter(i=>i.w>15&&i.w<200&&i.h>8&&i.h<120);
+        if(!ims.length)continue;
+        const cols=[];for(const im of ims.sort((a,b)=>a.x-b.x)){let c=cols.find(c=>Math.abs(c.x-im.x)<25);if(!c){c={x:im.x,ims:[]};cols.push(c)}c.ims.push(im)}
+        const ordered=cols.flatMap(c=>c.ims.sort((a,b)=>b.y-a.y));
+        const txt=await window.kpOcr.ocrImages(ordered.map(i=>i.obj));
+        for(const r of rs.filter(r=>r.pg===pg)){r.labels=txt.slice();r.ocr=1;
+          if(r.mt&&!/\d/.test(String(r.model).split("-").slice(1).join("")))r.mt={...r.mt,n:txt.length,rl:0,cols:cols.length>1?cols.map(c=>c.ims.length):undefined}}}
+    }catch(e){console.warn("ocr",e)}}
+  return reportToKp(rs);
 }
+function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=()=>no(new Error(src));document.head.appendChild(s)})}
 
 // ---------- encrypted links ----------
 const b64u={enc:u8=>{let s="";for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")},
@@ -456,7 +472,8 @@ function startBuilder(){
     if(jj&&jj.clientEmail&&!B.client){B.client=String(jj.clientEmail);$("bClient").value=B.client}
     save();initBar();render();
     const blank=kp.filter(k=>k.labels.every(l=>!l.trim())).length;
-    toast(kp.length+" keypads imported"+(blank?". "+blank+" came in without button names (Lutron draws Sunnata names as pictures), so tap those to type them.":""))});
+    const ocr=kp.filter(k=>k.ocr).length;kp.forEach(k=>delete k.ocr);save();
+    toast(kp.length+" keypads imported"+(ocr?". Button names on "+ocr+" were read from Lutron's pictures, so check the spelling.":"")+(blank?". "+blank+" came in without button names, so tap those to type them.":""))});
   $("bMake").addEventListener("click",async()=>{
     const err=[];if(!D.title.trim())err.push("a project name");if(!/^\S+@\S+\.\S+$/.test(B.client))err.push("the client's email");if(!D.kp.length)err.push("at least one keypad");
     if(err.length){$("bErr").textContent="Add "+err.join(", ")+" first.";return}
