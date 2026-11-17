@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26J";   // shown at the bottom of every page; bump with each release
+const VERSION="11-17-26K";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -236,14 +236,14 @@ function nextN(){const ns=D.kp.map(k=>parseInt(k.n,10)).filter(n=>!isNaN(n));ret
 $("addBtn").addEventListener("click",()=>{const fl=st.floor!=="All"?st.floor:(D.kp.length?D.kp[D.kp.length-1].floor:"First");
   const last=D.kp[D.kp.length-1],nk={n:nextN(),floor:fl,loc:"",cols:[3],labels:["","",""]};if(last&&last.type)setType(nk,last.type);
   D.kp.push(nk);save();render();openEd(D.kp.length-1)});
-function toggleOk(i){const k=D.kp[i];
+function toggleOk(i){const k=D.kp[i],wasAll=D.kp.every(k=>k.ok);
   if(!k.ok){const bad=k.labels.filter(l=>tooLong(l,k));if(bad.length){toast("Shorten “"+bad.map(x=>x.trim()).join("”, “")+"” before approving keypad "+k.n,1);return}k.ok=1;save();render();toast("Keypad "+k.n+" approved and locked")}
   else{delete k.ok;save();render();toast("Keypad "+k.n+" unlocked. You can edit it again")}
-  const b=document.querySelector(`.okb[data-ok="${i}"]`);if(b)b.focus()}
+  const b=document.querySelector(`.okb[data-ok="${i}"]`);if(b)b.focus();maybeApproved(wasAll)}
 function bulkOk(list,on){
   if(!on){const n=list.filter(k=>k.ok).length;list.forEach(k=>delete k.ok);save();render();toast(n+" keypad"+(n===1?"":"s")+" unlocked");return}
   const skip=list.filter(k=>!k.ok&&k.labels.some(l=>tooLong(l,k))),go=list.filter(k=>!k.ok&&!skip.includes(k));
-  go.forEach(k=>k.ok=1);save();render();
+  const wasAll=D.kp.every(k=>k.ok);go.forEach(k=>k.ok=1);save();render();maybeApproved(wasAll);
   toast((go.length?go.length+" keypad"+(go.length===1?"":"s")+" approved":"Nothing new to approve")+(skip.length?". Not approved, names too long: keypad "+skip.map(k=>k.n).join(", ")+". Shorten them first.":""),skip.length>0)}
 function tapKp(i){if(D.kp[i].ok){toast("Keypad "+D.kp[i].n+" is approved. Tap its check mark to unlock it.");return}openEd(i)}
 $("out").addEventListener("click",e=>{
@@ -373,20 +373,29 @@ async function makeLink(email){return siteBase()+"#e="+await seal({v:1,id:D.id,t
 
 // ---------- send changes (client) ----------
 const sd=$("sd");
-$("sendBtn").addEventListener("click",async()=>{
-  $("sdMail").removeAttribute("href");if(sd.showModal)sd.showModal();else sd.setAttribute("open","");
+const SALES="sales@audio1975.com";   // every email from the site goes here
+async function openSend(approved){
+  $("sdTitle").textContent=approved?"All keypads approved":"Send your changes";
+  $("sdText").textContent=approved?"Thank you! Every keypad is approved. Tap below to email your approval to Audio Breakthroughs, so we can order the engraving.":"This makes a link that opens the keypads exactly as you have them now. It opens with the same email as before.";
+  $("sdMail").textContent=approved?"Email approval to Audio Breakthroughs":"Email changes";
+  $("sdMail").removeAttribute("href");if(!sd.open){if(sd.showModal)sd.showModal();else sd.setAttribute("open","")}
   D.rev=Date.now();save();
   const url=await makeLink(EMAIL);
   const bad=D.kp.flatMap(k=>k.labels.filter(l=>tooLong(l,k)));
   $("sdWarn").innerHTML=bad.length?`<div class="banner">Still too long for Lutron: ${bad.map(esc).join(", ")}. You can send anyway, but these need shortening before ordering.</div>`:"";
-  const subj=(D.title||"Project")+" keypad changes";
   const gs=groups(),fn=gs.map(g=>(gs.length>1?FAMS[g].n+" ":"")+finName(projFin(g),g)).join(", ");
   const own=D.kp.filter(k=>k.finish&&finOk(grpOf(k),k.finish)).map(k=>"Keypad "+k.n+": "+finName(k.finish,grpOf(k)));
-  const ok=D.kp.filter(k=>k.ok).map(k=>k.n),okTxt=ok.length===D.kp.length?"All "+ok.length+" keypads approved. ":ok.length?"Approved: keypad"+(ok.length>1?"s ":" ")+ok.join(", ")+" ("+ok.length+" of "+D.kp.length+"). ":"";
-  const body=okTxt+"Here are my keypad changes (finish: "+fn+(own.length?"; different finish on "+own.join(", "):"")+"). Open this link and use the same email as before:\n\n"+url+"\n";
-  $("sdMail").href="mailto:"+encodeURIComponent(D.replyTo||"")+"?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body);
+  const ok=D.kp.filter(k=>k.ok).map(k=>k.n),all=ok.length===D.kp.length&&ok.length>0;
+  const okTxt=all?"All "+ok.length+" keypads approved. ":ok.length?"Approved: keypad"+(ok.length>1?"s ":" ")+ok.join(", ")+" ("+ok.length+" of "+D.kp.length+"). ":"";
+  const subj=(D.title||"Project")+(approved||all?" keypads approved":" keypad changes");
+  const body=(approved?"I approve all "+ok.length+" keypads for "+(D.title||"this project")+" as shown in this link (finish: "+fn+(own.length?"; different finish on "+own.join(", "):"")+"). Open it with the same email as before:\n\n"+url+"\n"
+    :okTxt+"Here are my keypad changes (finish: "+fn+(own.length?"; different finish on "+own.join(", "):"")+"). Open this link and use the same email as before:\n\n"+url+"\n")+(EMAIL?"\nFrom: "+EMAIL+"\n":"");
+  $("sdMail").href="mailto:"+SALES+"?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body);
   $("sdCopy").onclick=()=>copy(url);
-});
+}
+$("sendBtn").addEventListener("click",()=>openSend(false));
+// the moment every keypad is approved, offer the approval email (client only)
+function maybeApproved(wasAll){const all=D.kp.length&&D.kp.every(k=>k.ok);if(MODE==="client"&&all&&!wasAll)setTimeout(()=>openSend(true),350)}
 async function copy(t){try{await navigator.clipboard.writeText(t);toast("Link copied")}catch(e){window.prompt("Copy this link:",t)}}
 
 // ---------- CSV, print, reset ----------
@@ -448,7 +457,7 @@ window.addEventListener("hashchange",()=>{if(MODE==="client")location.reload()})
 
 // ---------- builder (new.html) ----------
 function builderFill(){
-  $("bTitle").value=D.title;$("bClient").value=B.client;$("bReply").value=B.reply;$("bOut").hidden=true;
+  $("bTitle").value=D.title;$("bClient").value=B.client;$("bOut").hidden=true;
 }
 function startBuilder(){
   const s=ls.get("kpBuilder");
@@ -458,7 +467,6 @@ function startBuilder(){
   builderFill();
   $("bTitle").addEventListener("input",e=>{D.title=e.target.value;save();render()});
   $("bClient").addEventListener("input",e=>{B.client=e.target.value.trim();save()});
-  $("bReply").addEventListener("input",e=>{B.reply=e.target.value.trim();save()});
   $("bImport").addEventListener("click",()=>{const kp=parseTable($("bPaste").value);
     if(!kp.length){toast("Nothing to import. Copy the rows from the Keypads tab first.");return}
     D.kp=kp;save();initBar();render();$("bPaste").value="";toast(kp.length+" keypads imported")});
@@ -479,7 +487,7 @@ function startBuilder(){
     if(err.length){$("bErr").textContent="Add "+err.join(", ")+" first.";return}
     $("bErr").textContent="";
     D.id=D.id||(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(36).slice(2));
-    D.replyTo=B.reply;D.rev=Date.now();save();
+    D.replyTo=SALES;D.rev=Date.now();save();
     const url=await makeLink(B.client);
     $("bLink").textContent=url;$("bOut").hidden=false;
     $("bCopy").onclick=()=>copy(url);
