@@ -5,11 +5,11 @@ const MODE=document.body.dataset.mode||"client";
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
-  pal:{n:"Palladiom",fg:"pal",pt:14,g:[2.95,4.72,.32,.5,2.31,3.72,0,.45]},
-  palsq:{n:"Palladiom Square",fg:"pal",pt:14,g:[3.39,3.39,.32,.32,2.75,2.75,0,.42],cls:"pal"},
-  see:{n:"seeTouch",fg:"see",pt:10,g:[2.94,4.69,.815,1.03,1.31,2.63,.06,.3]},
+  pal:{n:"Palladiom",fg:"pal",pt:14,g:[2.95,4.72,.835,1.05,1.28,3.0,0,.45]},
+  palsq:{n:"Palladiom Square",fg:"pal",pt:14,g:[3.39,3.39,.42,.42,2.55,2.55,0,.42],cls:"pal"},
+  see:{n:"seeTouch",fg:"see",pt:10,g:[2.94,4.69,.815,1.0,1.31,2.75,0,.36]},
   sun:{n:"Sunnata",fg:"sun",pt:11,g:[2.94,4.69,.92,1.08,1.1,2.53,.07,.32]},
-  pico:{n:"Pico",fg:"pico",pt:10,g:[1.3,3.63,.2,.55,.9,2.4,.08,.3]}};
+  pico:{n:"Pico",fg:"pico",pt:9,g:[1.3,3.63,.2,.55,.9,2.4,0,.3]}};
 // [id, family, name, part, buttons per column, raise/lower]
 const TYPES=[["pal-2","pal","Palladiom 2-button","HQWT-U-P2W",[2],0],["pal-3","pal","Palladiom 3-button","HQWT-U-P3W",[3],0],["pal-4","pal","Palladiom 4-button","HQWT-U-P4W",[4],0],["pal-3rl","pal","Palladiom 3-button raise/lower","HQWT-U-PRW",[3],1],
   ["palsq-4","palsq","Palladiom Square 4-button","HQWT-S-P4W",[4],0],["palsq-3rl","palsq","Palladiom Square 3-button raise/lower","HQWT-S-PRW",[3],1],["palsq-44","palsq","Palladiom Square 8-button (4+4)","HQWT-S-P44W",[4,4],0],["palsq-33rl","palsq","Palladiom Square 6-button raise/lower (3+3)","HQWT-S-PRRW",[3,3],1],
@@ -86,10 +86,10 @@ function famPlate(k){
   const cols=t[4].map(cnt=>{let h="";
     for(let i=0;i<cnt;i++,idx++){const raw=(k.labels[idx]||"").trim(),tx=kase(raw),ln=raw?fitLines(tx,lim):[];if(raw&&!ln)bad.push(raw);
       h+=`<div class="key"><span class="tx${raw&&!ln?" bad":""}">${!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(tx)}</span></div>`}
-    if(t[5])h+=`<div class="key rl" style="flex:0 0 calc(var(--pw)*${RLH}/3.55)"><span>▼</span><span>▲</span></div>`;
+    if(t[5])h+=`<div class="key rl" style="flex:0 0 calc(var(--pw)*${RLH}/3.55)"><span>▽</span><span>△</span></div>`;
     return `<div class="kcol">${h}</div>`}).join("");
   const g=F.fg,c=(finList(g).find(f=>f[0]===kFin(k))||finList(g)[0])[2],dk=lum(c)<.18;
-  const vars=`--pf:linear-gradient(150deg,${tint(c,.05)},${c} 55%,${tint(c,.025)});--pedge:rgba(0,0,0,${dk?.35:.14});--kc:${tint(c,dk?.03:-.012)};--ink:${dk?"rgba(255,255,255,.8)":"rgba(0,0,0,.66)"};--pt:${F.pt};--gap:calc(var(--pw)*${GAP}/3.55)`;
+  const vars=`--pf:linear-gradient(150deg,${tint(c,.05)},${c} 55%,${tint(c,.025)});--pedge:rgba(0,0,0,${dk?.35:.14});--kc:${tint(c,dk?.03:-.012)};--ink:${dk?"rgba(255,255,255,.85)":"rgba(0,0,0,.85)"};--pt:${+k.pt||F.pt};--gap:calc(var(--pw)*${GAP}/3.55)`;
   return {html:`<div class="plate fam ${F.cls||t[1]}${dk?" dk":""}" style="width:calc(var(--pw)*${W}/3.55);aspect-ratio:${W}/${H};${vars}"><div class="keys" style="left:${(X/W*100).toFixed(2)}%;top:${(Y/H*100).toFixed(2)}%;width:${(FW/W*100).toFixed(2)}%;height:${(FH/H*100).toFixed(2)}%">${cols}</div></div>`,bad};
 }
 function plate(k){
@@ -248,7 +248,7 @@ function reportToKp(rs){
     if(t)k.type=t[0];const n=k.cols.reduce((a,b)=>a+b,0);k.labels=r.labels.slice(0,n);while(k.labels.length<n)k.labels.push("");
     const g=grpOf(k);let f=findFin(g,r.color);
     if(!f){const code=(String(r.model).match(/-([A-Z]{2,3})(-[A-Z0-9]+)?$/)||[])[1];if(code)f=findFin(g,code)||findFin(g,code.slice(-2))}
-    if(f)k.finish=f;return k});
+    if(f)k.finish=f;if(+r.pt>=6&&+r.pt<=20)k.pt=+r.pt;return k});
 }
 // most common finish in each family becomes the project finish; keypads that match it drop their own
 function adoptFinishes(){for(const g of GROUPS){const ks=D.kp.filter(k=>grpOf(k)===g&&k.finish);if(!ks.length)continue;

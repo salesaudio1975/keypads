@@ -47,6 +47,9 @@ function parsePage(items){
   const wi=L.findIndex((l,i)=>i>hi&&/^Wallplate:/.test(l.t));
   const locs=L.slice(hi+1,wi<0?hi+2:wi).map(l=>l.t).filter(t=>t.includes(">")||t.length);
   const color=after(items,"Color:");
+  const be=items.find(i=>i.s.trim()==="Button Engraving");   // the button engraving column's font size (not the faceplate's)
+  const fsz=be?items.find(i=>i.s.trim()==="Font Size:"&&Math.abs(i.x-be.x)<20):null;
+  const pt=fsz?parseFloat(after([fsz,...items.filter(i=>i!==fsz&&i.s.trim()!=="Font Size:")],"Font Size:")):NaN;
   const bb=L.findIndex(l=>/^Backbox Size:|Font Size:/.test(l.t));
   let lowest=Math.max(wi,bb);L.forEach((l,i)=>{if(i>wi&&/Font Size:|Backbox Size:/.test(l.t))lowest=Math.max(lowest,i)});
   const mi=L.findIndex((l,i)=>i>lowest&&l.items.length===1&&MODEL.test(l.t));
@@ -60,7 +63,7 @@ function parsePage(items){
   const perCol=mt.cols||[mt.n];
   const labels=[];
   cols.forEach((c,ci)=>{const want=perCol[ci]||perCol[perCol.length-1];labels.push(...group(c.ls,want))});
-  return locs.map(p=>({...splitLoc(p),model,color,mt,labels:labels.slice()}));
+  return locs.map(p=>({...splitLoc(p),model,color,pt,mt,labels:labels.slice()}));
 }
 function group(ls,want){ // join lines into buttons: big vertical gaps split buttons
   ls=ls.slice().sort((a,b)=>b.y-a.y);if(!ls.length)return [];

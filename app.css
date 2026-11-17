@@ -118,29 +118,39 @@ textarea.paste{font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;color:var(--f
 .steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px;line-height:1.5}
 #helpLink{color:var(--accent);font-weight:600;white-space:nowrap}
 .cap small.own{color:var(--accent);font-weight:600}
-/* Other Lutron families: drawn to scale with Alisse (--pw = 3.55 in) */
+/* Other Lutron families: drawn to scale with Alisse (--pw = 3.55 in), styled after Lutron's engraving report pictures */
 .plate.fam{aspect-ratio:auto;border-radius:3px}
-.fam .keys{position:absolute;display:flex;gap:var(--gap)}
+.fam .keys{position:absolute;display:flex;gap:var(--gap);box-sizing:border-box}
 .fam .kcol{flex:1;display:flex;flex-direction:column;gap:var(--gap);min-width:0}
-.fam .key{flex:1;min-height:0;position:relative;display:flex;align-items:center;box-sizing:border-box;overflow:hidden;
-  background:var(--kc);border:1px solid rgba(0,0,0,.2);border-radius:2px;padding:0 6%}
-.fam.dk .key{border-color:rgba(255,255,255,.16)}
-.fam .key .tx{font-family:Helvetica,Arial,sans-serif;font-weight:600;text-align:left;line-height:1.15;white-space:nowrap}
-.fam .key.rl{justify-content:space-around;padding:0;font-size:calc(var(--pw)*.035);color:var(--ink);opacity:.75}
-/* Palladiom: flush keys, thin lines between, words top-left */
-.fam.pal .keys,.fam.pal .kcol{gap:0}
-.fam.pal .keys{box-shadow:0 0 0 1px rgba(0,0,0,.14)}
-.fam.pal .key{border:0;border-radius:0;border-top:1px solid rgba(0,0,0,.16);align-items:flex-start;padding:5% 7%;background:transparent}
-.fam.pal .kcol+.kcol .key{border-left:1px solid rgba(0,0,0,.16)}
-.fam.pal .kcol .key:first-child{border-top:0}
-.fam.pal.dk .key,.fam.pal.dk .keys{border-color:rgba(255,255,255,.14)}
-/* seeTouch: separate keys with a little depth */
-.fam.see .key{box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 1px rgba(0,0,0,.12)}
-/* Sunnata: rounded keys, centered words */
-.fam.sun .key{border-radius:calc(var(--pw)*.02);justify-content:center}
-.fam.sun .key .tx,.fam.pico .key .tx{text-align:center}
-.fam.sun .key.rl{border-radius:calc(var(--pw)*.02)}
-/* Pico: narrow remote, rounded */
-.fam.pico{border-radius:calc(var(--pw)*.04)}
-.fam.pico .key{border-radius:calc(var(--pw)*.015);justify-content:center;padding:0 3%}
+.fam .key{flex:1;min-height:0;position:relative;display:flex;align-items:flex-start;box-sizing:border-box;overflow:hidden;background:var(--kc);padding:4% 7%}
+.fam .key .tx{font-family:Helvetica,"Helvetica Neue",Arial,sans-serif;font-weight:400;text-align:left;line-height:1.2;white-space:nowrap;color:var(--ink)}
+.fam .key.rl{align-items:center;justify-content:space-around;padding:0;font-size:calc(var(--pw)*.05);color:var(--line2);font-family:Arial,sans-serif}
+.fam{--line2:rgba(0,0,0,.62)}.fam.dk{--line2:rgba(255,255,255,.5)}
+/* Palladiom and Pico: flush keys, drawn outlines, words top-left */
+.fam.pal .keys,.fam.pico .keys{gap:0;border:1px solid var(--line2)}
+.fam.pal .kcol,.fam.pico .kcol{gap:0}
+.fam.pal .key,.fam.pico .key{background:transparent;border-top:1px solid var(--line2)}
+.fam.pal .kcol .key:first-child,.fam.pico .kcol .key:first-child{border-top:0}
+.fam.pal .kcol+.kcol{border-left:1px solid var(--line2)}
+.fam.pico{border-radius:calc(var(--pw)*.05)}
+.fam.pico .keys::before{content:"";position:absolute;left:calc(var(--pw)*-.035);top:calc(var(--pw)*.035);width:calc(var(--pw)*.012);aspect-ratio:1;border-radius:50%;background:var(--line2)}
+.fam.pico .keys{overflow:visible}
+/* seeTouch: rounded bezel, separate bevelled keys, a dot before each name, outline arrows */
+.fam.see .keys{border:1.5px solid var(--line2);border-radius:calc(var(--pw)*.025);padding:calc(var(--pw)*.035) calc(var(--pw)*.045);gap:0}
+.fam.see .kcol{gap:calc(var(--pw)*.012)}
+.fam.see .key{align-items:center;padding:0 5%;border:1px solid rgba(0,0,0,.35);border-radius:1px;
+  background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0) 45%,rgba(0,0,0,.06)),var(--kc);box-shadow:1px 1px 1px rgba(0,0,0,.12)}
+.fam.see.dk .key{border-color:rgba(255,255,255,.25);background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,0) 45%,rgba(0,0,0,.2)),var(--kc)}
+.fam.see .key .tx{font-family:Arial,Helvetica,sans-serif}
+.fam.see .key .tx:not(:empty)::before{content:"·";margin-right:.12em;font-weight:700}
+.fam.see .key.rl{color:rgba(0,0,0,.28)}.fam.see.dk .key.rl{color:rgba(255,255,255,.35)}
+/* Sunnata: rounded frame, flush keys, grey words top-left, LED bar on the right */
+.fam.sun .keys{border:1px solid var(--line2);border-radius:calc(var(--pw)*.03);padding:calc(var(--pw)*.012);gap:0}
+.fam.sun .kcol{gap:0;border:1px solid rgba(0,0,0,.25);border-radius:calc(var(--pw)*.018);overflow:hidden}
+.fam.sun .key{border-top:1px solid rgba(0,0,0,.25);padding:5% 22% 5% 7%}
+.fam.sun .kcol .key:first-child{border-top:0}
+.fam.sun .key .tx{color:var(--sink)}
+.fam{--sink:rgba(0,0,0,.45)}.fam.dk{--sink:rgba(255,255,255,.6)}
+.fam.sun .key:not(.rl)::after{content:"";position:absolute;right:9%;top:16%;bottom:16%;width:calc(var(--pw)*.008);border-radius:2px;background:rgba(150,110,110,.45)}
+.fam.dk .key,.fam.dk .keys,.fam.dk .kcol{border-color:rgba(255,255,255,.22)}
 .famwall{}
