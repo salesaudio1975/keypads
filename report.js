@@ -36,9 +36,10 @@ function modelType(m){
     return{fam:"see",n:5,rl:1}}
   return null;
 }
-const FLOORISH=/^(basement|cellar|lower level|ground|main|first|second|third|fourth|attic|roof|garage|\d+(st|nd|rd|th)?\s*(fl|floor|level)\b|level\s*\d|floor\s*\d|.*\bfloor\b|.*\blevel\b)/i;
+const FLOORISH=/^(apartment|apt\.?|unit|suite|penthouse|ph\b|residence|building|bldg|wing|guest house|pool house|townhouse|basement|cellar|lower level|ground|main|first|second|third|fourth|attic|roof|garage|\d+(st|nd|rd|th)?\s*(fl|floor|level)\b|level\s*\d|floor\s*\d|.*\bfloor\b|.*\blevel\b)/i;
 function splitLoc(p){const parts=p.split(">").map(s=>s.trim()).filter(Boolean);
-  if(parts.length>1&&FLOORISH.test(parts[0]))return{floor:parts[0],loc:dedupe(parts.slice(1)).join(" · ")};
+  if(parts.length>1&&FLOORISH.test(parts[0])){const code=(parts[0].match(/\b([0-9]+[A-Z]?|[A-Z][0-9]+)$/i)||[])[1];   // "Foyer - 27C" in "Apartment 27C" -> "Foyer"
+    const rest=parts.slice(1).map(s=>code?s.replace(new RegExp("\\s*[-–]\\s*"+code+"$","i"),"").trim():s);return{floor:parts[0],loc:dedupe(rest).join(" · ")}}
   return{floor:"Main",loc:dedupe(parts).join(" · ")}}
 function dedupe(a){return a.filter((s,i)=>s!==a[i-1])}
 function parsePage(items){
@@ -63,7 +64,7 @@ function parsePage(items){
   const perCol=mt.cols||[mt.n];
   const labels=[];
   cols.forEach((c,ci)=>{const want=perCol[ci]||perCol[perCol.length-1];labels.push(...group(c.ls,want))});
-  return locs.map(p=>({...splitLoc(p),model,color,pt,mt,labels:labels.slice()}));
+  return locs.map(p=>({...splitLoc(p),model,color,pt,mt:mt&&{...mt},labels:labels.slice()}));
 }
 function group(ls,want){ // join lines into buttons: big vertical gaps split buttons
   ls=ls.slice().sort((a,b)=>b.y-a.y);if(!ls.length)return [];
@@ -75,7 +76,7 @@ function group(ls,want){ // join lines into buttons: big vertical gaps split but
     btn[bi-1]=btn[bi-1].concat(btn[bi]);btn.splice(bi,1)}
   return btn.map(b=>b.map(l=>l.t).join(" "));
 }
-function parseReport(pages){const out=[];for(const p of pages)out.push(...parsePage(p));return out}
+function parseReport(pages){const out=[];pages.forEach((p,i)=>out.push(...parsePage(p).map(r=>({...r,pg:i}))));return out}
 root.parseReport=parseReport;root.modelType=modelType;
 if(typeof module!=="undefined")module.exports={parseReport,modelType};
 })(typeof window!=="undefined"?window:globalThis);
