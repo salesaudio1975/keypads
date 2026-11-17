@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26B";   // shown at the bottom of every page; bump with each release
+const VERSION="11-17-26C";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -126,9 +126,11 @@ function render(){
   segItems("floorSel",["All",...fl].map(f=>[f,f]),"floor");
   const gs=groups().join();if(gs!==finBar.last)finBar();
   $("size").closest(".ctl").hidden=!groups().includes("alisse");
-  $("out").innerHTML=fl.filter(f=>st.floor==="All"||f===st.floor).map(f=>{
+  const tot=D.kp.length,okN=D.kp.filter(k=>k.ok).length;
+  $("out").innerHTML=(tot?`<div class="apbar${okN===tot?" done":""}"><p><b>${okN===tot?"Every keypad is approved.":"Check off each keypad when it's right."}</b> ${okN===tot?"Tap “Send changes” to send them to us. Tap a ✓ to unlock a keypad.":"Tap the ✓ in a keypad's corner to approve it and lock it. Tap it again to unlock."} <span class="apn">${okN} of ${tot} approved</span></p><div class="r">${okN<tot?`<button type="button" class="btnx primary" data-all="approve">✓ Approve all ${tot}</button>`:""}${okN?`<button type="button" class="btnx" data-all="unlock">Unlock all</button>`:""}</div></div>`:"")+fl.filter(f=>st.floor==="All"||f===st.floor).map(f=>{
     const ks=D.kp.map((k,i)=>[k,i]).filter(([k])=>(k.floor||"No floor")===f);
-    return `<section class="floor"><h2>${esc(/basement|floor|level|attic|roof|garage|cellar/i.test(f)?f:f+" floor")} · ${ks.length} keypad${ks.length===1?"":"s"}${ks.some(([k])=>k.ok)?` · ${ks.filter(([k])=>k.ok).length} approved`:""}</h2><div class="grid">${ks.map(([k,i])=>{
+    const nOk=ks.filter(([k])=>k.ok).length,all=nOk===ks.length;
+    return `<section class="floor"><h2><span>${esc(/basement|floor|level|attic|roof|garage|cellar/i.test(f)?f:f+" floor")} · ${ks.length} keypad${ks.length===1?"":"s"}${nOk?` · ${all?"all ":""}${nOk} approved`:""}</span><button type="button" class="btnx apf${all?"":" go"}" data-floor="${esc(f)}" data-act="${all?"unlock":"approve"}">${all?"Unlock this floor":"✓ Approve this floor"}</button></h2><div class="grid">${ks.map(([k,i])=>{
       const p=plate(k),own=k.finish&&finOk(grpOf(k),k.finish);
       return `<div class="kp${k.ok?" ok":""}" tabindex="0" role="button" data-i="${i}" aria-label="${k.ok?"Keypad "+esc(k.n)+", approved":"Edit keypad "+esc(k.n)}"><button type="button" class="okb" data-ok="${i}" aria-pressed="${!!k.ok}" title="${k.ok?"Approved. Tap to unlock":"Approve and lock this keypad"}" aria-label="${k.ok?"Unlock keypad "+esc(k.n):"Approve keypad "+esc(k.n)}">✓</button><div class="wallbox ${wallCls(k)}">${p.html}</div><div class="cap"><b>Keypad ${esc(k.n)}<span class="tag">${esc(tagOf(k))}</span></b>${own?`<small class="own">${esc(finName(k.finish,grpOf(k))+codeOf(grpOf(k),k.finish))} (own finish)</small>`:""}<small>${esc(k.loc||"")}</small>${p.bad.length?`<span class="warn">Too long for Lutron: ${p.bad.map(esc).join(", ")}</span>`:""}${k.ok?`<span class="appr">✓ Approved</span>`:`<span class="edit">Tap to edit</span>`}</div></div>`}).join("")}</div></section>`;
   }).join("")||`<p class="hint">No keypads yet. Tap “+ Add keypad”${MODE==="builder"?", or paste them from the Google Sheet above":""}.</p>`;
@@ -221,8 +223,16 @@ function toggleOk(i){const k=D.kp[i];
   if(!k.ok){const bad=k.labels.filter(l=>tooLong(l,k));if(bad.length){toast("Shorten "+bad.join(", ")+" before approving keypad "+k.n);return}k.ok=1;save();render();toast("Keypad "+k.n+" approved and locked")}
   else{delete k.ok;save();render();toast("Keypad "+k.n+" unlocked. You can edit it again")}
   const b=document.querySelector(`.okb[data-ok="${i}"]`);if(b)b.focus()}
+function bulkOk(list,on){
+  if(!on){const n=list.filter(k=>k.ok).length;list.forEach(k=>delete k.ok);save();render();toast(n+" keypad"+(n===1?"":"s")+" unlocked");return}
+  const skip=list.filter(k=>!k.ok&&k.labels.some(l=>tooLong(l,k))),go=list.filter(k=>!k.ok&&!skip.includes(k));
+  go.forEach(k=>k.ok=1);save();render();
+  toast((go.length?go.length+" keypad"+(go.length===1?"":"s")+" approved":"Nothing new to approve")+(skip.length?". Not approved, names too long: keypad "+skip.map(k=>k.n).join(", ")+". Shorten them first.":""))}
 function tapKp(i){if(D.kp[i].ok){toast("Keypad "+D.kp[i].n+" is approved. Tap its check mark to unlock it.");return}openEd(i)}
-$("out").addEventListener("click",e=>{const o=e.target.closest(".okb");if(o){e.stopPropagation();toggleOk(+o.dataset.ok);return}const k=e.target.closest(".kp");if(k)tapKp(+k.dataset.i)});
+$("out").addEventListener("click",e=>{
+  const a=e.target.closest("[data-all]");if(a){bulkOk(D.kp,a.dataset.all==="approve");return}
+  const fb=e.target.closest(".apf");if(fb){bulkOk(D.kp.filter(k=>(k.floor||"No floor")===fb.dataset.floor),fb.dataset.act==="approve");return}
+  const o=e.target.closest(".okb");if(o){e.stopPropagation();toggleOk(+o.dataset.ok);return}const k=e.target.closest(".kp");if(k)tapKp(+k.dataset.i)});
 $("out").addEventListener("keydown",e=>{if(e.target.closest(".okb"))return;const k=e.target.closest(".kp");if(k&&(e.key==="Enter"||e.key===" ")){e.preventDefault();tapKp(+k.dataset.i)}});
 
 // ---------- layouts and importing from the Google Sheet ----------

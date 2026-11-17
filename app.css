@@ -183,3 +183,16 @@ textarea.paste{font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;color:var(--f
 .kp.ok:hover .wallbox{box-shadow:0 0 0 2px var(--okc)}
 .kp .appr{font-size:11px;color:var(--okc);font-weight:700;margin-top:2px;display:block}
 @media print{.okb{display:none}.kp.ok .wallbox{box-shadow:none}}
+/* approvals: note bar, floor button, red stamp */
+.apbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin:18px 0 0;padding:12px 14px;border:1px solid var(--line);border-left:4px solid #c62828;border-radius:8px;background:var(--surface)}
+.apbar.done{border-left-color:var(--okc)}
+.apbar p{margin:0;font-size:13px;line-height:1.45;flex:1 1 260px}
+.apbar .apn{display:inline-block;margin-left:4px;font-weight:700;color:var(--okc);white-space:nowrap}
+.apbar .r{display:flex;gap:8px;flex-wrap:wrap}
+.floor h2{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.floor h2 .apf{font-size:11px;letter-spacing:.04em;text-transform:none;padding:4px 10px;min-height:0}
+.floor h2 .apf.go{color:var(--okc);border-color:var(--okc)}
+.wallbox{position:relative}
+.kp.ok .wallbox::after{content:"APPROVED";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-18deg);padding:4px 10px;border:3px solid rgba(198,40,40,.55);border-radius:6px;color:rgba(198,40,40,.6);font:800 22px/1 var(--display,Arial),Arial,sans-serif;letter-spacing:.12em;pointer-events:none;white-space:nowrap;background:rgba(255,255,255,.06)}
+@media print{.apbar,.apf{display:none!important}}
+@media (max-width:440px){.kp.ok .wallbox::after{font-size:17px;border-width:2.5px;padding:3px 8px}}
