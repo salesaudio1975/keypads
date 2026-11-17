@@ -162,3 +162,10 @@ textarea.paste{font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;color:var(--f
 .fam.sun .key:not(.rl)::after{content:"";position:absolute;right:9%;top:16%;bottom:16%;width:calc(var(--pw)*.008);border-radius:2px;background:rgba(150,110,110,.45)}
 .fam.dk .key,.fam.dk .keys,.fam.dk .kcol{border-color:rgba(255,255,255,.22)}
 .famwall{}
+/* seeTouch: buttons sit in 7 equal slots (spaced, grouped or dual-group layouts), like Lutron's spec sheets */
+.fam.see .kcol.slots{gap:calc(var(--pw)*.008)}
+.fam.see .slots>*{flex:1 1 0;min-height:0}
+.fam.see .gapslot{visibility:hidden}
+.fam.see .ir{display:flex;align-items:center;justify-content:center}
+.fam.see .ir i{display:block;width:45%;height:28%;border-radius:2px;background:#2b2222;opacity:.85}
+.ver{text-align:center;font-size:11px;color:var(--muted);margin:8px 0 18px;letter-spacing:.04em}@media print{.ver{display:none}}
