@@ -8,7 +8,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <title>Keypads</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="app.css?v=20261117g">
+<link rel="stylesheet" href="app.css?v=20261117h">
 </head>
 <body data-mode="client">
 <div class="wrap"><div class="gate" id="gate" hidden>
@@ -28,7 +28,7 @@
   <div class="top">
     <div>
       <h1 id="title">Keypads</h1>
-      <p class="sub" id="subline">Lutron keypads. Tap any keypad to change its button names or layout. <a href="#" id="helpLink" hidden onclick="return false">How this works</a></p>
+      <p class="sub" id="subline">Lutron keypads. Tap any keypad to change its button names or layout. When a keypad is right, tap its ✓ to approve it. <a href="#" id="helpLink" hidden onclick="return false">How this works</a></p>
     </div>
     <div class="actions">
       <button type="button" class="btnx" id="addBtn">+ Add keypad</button>
@@ -82,12 +82,13 @@
     <li><b>These are your keypads</b>, drawn the way they'll look on the wall in your project's finish (marked ★).</li>
     <li><b>Tap any keypad</b> to change what the buttons say, or give that one keypad a different finish. A name turns red if it's too long to engrave; shorten it or add a space so it fits on two lines.</li>
     <li><b>Your changes save on this device</b> as you go, so you can come back to this link later.</li>
+    <li><b>Check off each keypad</b> with the ✓ in its corner once it's right. That approves it and locks it so it can't change by accident; tap the ✓ again to unlock it. You can also approve a whole floor, or every keypad at once.</li>
     <li><b>When you're done, tap “Send changes”</b> to email them to us.</li>
   </ol>
   <p class="small">You can tap other finishes at the top to compare. To pick a different one, tap it, then “Use … for my project”.</p>
   <div class="dfoot"><span></span><div class="r"><button type="submit" class="btnx primary">Got it</button></div></div>
 </form></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="app.js?v=20261117g"></script>
+<script src="app.js?v=20261117h"></script>
 </body>
 </html>
