@@ -30,6 +30,7 @@ const typeOf=k=>k&&k.type?TYPES.find(t=>t[0]===k.type)||null:null;
 const famOf=k=>{const t=typeOf(k);return t?t[1]:"alisse"};
 const grpOf=k=>FAMS[famOf(k)].fg;
 const finList=g=>g==="alisse"?FIN:FG[g];
+const codeOf=(g,v)=>g!=="alisse"&&MODE==="builder"?" ("+v+")":"";   // Lutron finish code, team page only
 const CASES=[["free","free-form"],["title","Title Case"],["caps","ALL CAPS"],["lower","all lower case"]];
 const LAYOUTS=["1","2","3","1 + 1","1 + 3","2 + 2","3 + 1","3 + 3","1 + 1 + 1","1 + 3 + 3","2 + 2 + 2","3 + 3 + 1","3 + 3 + 3"];
 const $=id=>document.getElementById(id);
@@ -120,7 +121,7 @@ function render(){
     const ks=D.kp.map((k,i)=>[k,i]).filter(([k])=>(k.floor||"No floor")===f);
     return `<section class="floor"><h2>${esc(/basement|floor|level|attic|roof|garage|cellar/i.test(f)?f:f+" floor")} · ${ks.length} keypad${ks.length===1?"":"s"}</h2><div class="grid">${ks.map(([k,i])=>{
       const p=plate(k),own=k.finish&&finOk(grpOf(k),k.finish);
-      return `<div class="kp" tabindex="0" role="button" data-i="${i}" aria-label="Edit keypad ${esc(k.n)}"><div class="wallbox ${wallCls(k)}">${p.html}</div><div class="cap"><b>Keypad ${esc(k.n)}<span class="tag">${esc(tagOf(k))}</span></b>${own?`<small class="own">${esc(finName(k.finish,grpOf(k)))} (own finish)</small>`:""}<small>${esc(k.loc||"")}</small>${p.bad.length?`<span class="warn">Too long for Lutron: ${p.bad.map(esc).join(", ")}</span>`:""}<span class="edit">Tap to edit</span></div></div>`}).join("")}</div></section>`;
+      return `<div class="kp" tabindex="0" role="button" data-i="${i}" aria-label="Edit keypad ${esc(k.n)}"><div class="wallbox ${wallCls(k)}">${p.html}</div><div class="cap"><b>Keypad ${esc(k.n)}<span class="tag">${esc(tagOf(k))}</span></b>${own?`<small class="own">${esc(finName(k.finish,grpOf(k))+codeOf(grpOf(k),k.finish))} (own finish)</small>`:""}<small>${esc(k.loc||"")}</small>${p.bad.length?`<span class="warn">Too long for Lutron: ${p.bad.map(esc).join(", ")}</span>`:""}<span class="edit">Tap to edit</span></div></div>`}).join("")}</div></section>`;
   }).join("")||`<p class="hint">No keypads yet. Tap “+ Add keypad”${MODE==="builder"?", or paste them from the Google Sheet above":""}.</p>`;
 }
 function segItems(id,items,key){
@@ -134,7 +135,7 @@ function finBar(){
   const gs=groups(),multi=gs.length>1;finBar.last=gs.join();
   $("finBox").innerHTML=gs.map(g=>{const sx=g==="alisse"?"":"-"+g,cur=curFin(g),pj=projFin(g);
     const lab=multi?FAMS[g].n+" finish":MODE==="builder"?"Project finish":"Finish";
-    return `<div class="ctl"><span id="finLabel${sx}">${esc(lab)}</span><div class="seg finseg" id="finish${sx}" data-g="${g}">${finList(g).map(([v,l,c])=>`<button type="button" data-v="${v}" aria-pressed="${v===cur}"><i class="sw" style="background:${c}"></i>${esc(l)}${MODE==="client"&&v===pj?" ★":""}</button>`).join("")}</div><div id="finNote${sx}" class="finnote">${finNote(g,sx)}</div></div>`}).join("");
+    return `<div class="ctl"><span id="finLabel${sx}">${esc(lab)}</span><div class="seg finseg" id="finish${sx}" data-g="${g}">${finList(g).map(([v,l,c])=>`<button type="button" data-v="${v}" aria-pressed="${v===cur}"><i class="sw" style="background:${c}"></i>${esc(l+codeOf(g,v))}${MODE==="client"&&v===pj?" ★":""}</button>`).join("")}</div><div id="finNote${sx}" class="finnote">${finNote(g,sx)}</div></div>`}).join("");
 }
 function finNote(g,sx){
   if(MODE==="builder")return `<span class="small">The client's link opens in this finish. They can tap others to compare.</span>`;
@@ -161,7 +162,7 @@ const layLabel=l=>l==="1"?"1 button":/\+/.test(l)?l.split(" + ").length+" column
 $("edLay").innerHTML=`<optgroup label="Alisse">${LAYOUTS.map(l=>`<option value="a:${l}">Alisse ${layLabel(l)}</option>`).join("")}</optgroup>`+
   ["pal","palsq","see","sun","pico"].map(f=>`<optgroup label="${FAMS[f].n}">${TYPES.filter(t=>t[1]===f).map(t=>`<option value="${t[0]}">${esc(t[2])}</option>`).join("")}</optgroup>`).join("");
 function fillFin(){const k=D.kp[cur],g=grpOf(k);
-  $("edFin").innerHTML=`<option value="">Same as project (${esc(finName(projFin(g),g))})</option>`+finList(g).map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join("");
+  $("edFin").innerHTML=`<option value="">Same as project (${esc(finName(projFin(g),g))})</option>`+finList(g).map(([v,l])=>`<option value="${v}">${esc(l+codeOf(g,v))}</option>`).join("");
   $("edFin").value=k.finish&&finOk(g,k.finish)?k.finish:""}
 const COLNAME={1:["Buttons (top to bottom)"],2:["Left column (top to bottom)","Right column (top to bottom)"],3:["Left column","Middle column","Right column"]};
 function openEd(i){cur=i;const k=D.kp[i];
