@@ -8,7 +8,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <title>Keypads</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="app.css?v=20261117u">
+<link rel="stylesheet" href="app.css?v=20261117v">
 </head>
 <body data-mode="client">
 <div class="wrap"><div class="gate" id="gate" hidden>
@@ -37,13 +37,15 @@
   </div>
   <div id="banner"></div>
   <div id="builder"></div>
-  <div class="bar" role="group" aria-label="Mockup options">
+  <details class="setbox" id="setBox" data-k="set"><summary><span class="sbt">Settings</span><span class="sbv" id="setSum"></span></summary>
+  <div class="bar" role="group" aria-label="Settings">
     <div id="finBox" style="display:contents"></div>
-    <div class="ctl"><span>Case</span><div class="seg" id="case"></div></div>
-    <div class="ctl"><span>Text size</span><div class="seg" id="size"></div></div>
-    <div class="ctl"><span>Floor</span><div class="seg" id="floorSel"></div></div>
-    <div class="ctl"><span>Zoom <small class="zhint">(100% = actual size)</small></span><div class="seg zoomseg" id="zoomSel"><button type="button" data-z="-" aria-label="Zoom out">−</button><button type="button" data-z="1" id="zoomVal" title="Back to actual size">100%</button><button type="button" data-z="+" aria-label="Zoom in">+</button></div></div>
+    <details class="ctl" data-k="case"><summary><span>Text case</span><b class="cv" id="cvCase"></b></summary><div class="seg" id="case"></div></details>
+    <details class="ctl" data-k="size"><summary><span>Text size</span><b class="cv" id="cvSize"></b></summary><div class="seg" id="size"></div></details>
+    <details class="ctl" data-k="floor"><summary><span>Show floor</span><b class="cv" id="cvFloor"></b></summary><div class="seg" id="floorSel"></div></details>
+    <details class="ctl" data-k="zoom"><summary><span>Zoom</span><b class="cv" id="cvZoom"></b></summary><div class="seg zoomseg" id="zoomSel"><button type="button" data-z="-" aria-label="Zoom out">−</button><button type="button" data-z="1" id="zoomVal" title="Back to actual size">100%</button><button type="button" data-z="+" aria-label="Zoom in">+</button></div><small class="zhint">100% = actual size</small></details>
   </div>
+  </details>
   <div id="out"></div>
   <p class="note">Engraving is checked like Lutron's engraving tool, 2 lines max. Alisse widths match Lutron's tool; Palladiom, seeTouch, Sunnata and Pico allow about 9 capital letters a line. Names that are too wide show in red. Changes save in this browser until they're sent. This is a mockup for checking layout and wording; colors on screen are approximate.</p>
   <p class="note"><button type="button" class="btnx" id="csvBtn">Download for Google Sheet (CSV)</button> <button type="button" class="btnx" id="printBtn">Print</button> <button type="button" class="btnx danger" id="resetBtn">Undo all my changes</button></p>
@@ -51,7 +53,7 @@
 
 <dialog id="ed" aria-labelledby="edTitle"><form method="dialog" class="dlg" id="edForm">
   <h3 id="edTitle">Keypad</h3>
-  <div class="pv" id="edPv"></div>
+  <details class="edmore" id="edMore" data-k="edmore"><summary><span id="edMoreSum"></span><span class="edch">Details</span></summary>
   <div class="row3">
     <label class="f">Keypad #<input id="edN" autocomplete="off"></label>
     <label class="f">Location<input id="edLoc" autocomplete="off"></label>
@@ -59,10 +61,11 @@
     <label class="f">Keypad type<select id="edLay"></select></label>
     <label class="f full">Finish for this keypad<select id="edFin"></select></label>
   </div>
+  </details>
   <datalist id="floorList"></datalist>
-  <div class="cols" id="edCols"></div>
+  <div class="edmain" id="edMain"><div class="pv" id="edPv"></div><div class="cols" id="edCols"></div></div>
   <div class="dfoot">
-    <div class="r"><button type="button" class="btnx danger" id="edDel">Delete keypad</button><button type="button" class="btnx" id="edDup">Duplicate</button></div>
+    <div class="r"><button type="button" class="btnx danger" id="edDel">Delete<span class="hs"> keypad</span></button><button type="button" class="btnx" id="edDup">Duplicate</button></div>
     <div class="r"><button type="button" class="btnx" id="edCancel">Cancel</button><button type="submit" class="btnx primary" value="done" id="edDone">Done</button></div>
   </div>
 </form></dialog>
@@ -90,6 +93,6 @@
   <div class="dfoot"><span></span><div class="r"><button type="submit" class="btnx primary">Got it</button></div></div>
 </form></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="app.js?v=20261117u"></script>
+<script src="app.js?v=20261117v"></script>
 </body>
 </html>
