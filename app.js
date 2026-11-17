@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26N";   // shown at the bottom of every page; bump with each release
+const VERSION="11-17-26P";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -474,17 +474,18 @@ function clearProject(){D={id:"",title:"",replyTo:"",rev:0,kp:[]};B.client="";ls
   toast("New project started. Add a name, the client's email and the keypads.")}
 // ---- all projects (reads the shared Google Sheet) ----
 let ROWS=null,openArm="",rmArm="";
-const teamKey=()=>{const c=$("kpCfg");return c?c.dataset.key:""};
+const teamTok=()=>{try{return localStorage.getItem("kpTeamTok")||""}catch(e){return""}};
 const linkTok=u=>{const m=String(u||"").match(/#e=([A-Za-z0-9_-]+)/);return m?m[1]:""};
 function summary(kp,s0){const set=new Set(kp.map(grpOf)),gs=GROUPS.filter(g=>set.has(g));if(!gs.length)gs.push("alisse");
   const fin=g=>g==="alisse"?(s0.finish||"nickel"):fixFx(s0.fx)[g];
   return {keypads:kp.length,types:gs.map(g=>FAMS[g].n).join(", "),finish:gs.map(g=>(gs.length>1?FAMS[g].n+" ":"")+finName(fin(g),g)).join(", "),approved:kp.some(k=>k.ok)?kp.filter(k=>k.ok).length+" of "+kp.length:""}}
 async function listSave(url,email,status,p){if(!KP_API)return false;p=p||{id:D.id,title:D.title,kp:D.kp,st:pickSt()};
-  try{const r=await api({a:"save",key:teamKey(),site:siteBase(),id:p.id,title:p.title,client:normEmail(email),status,link:url,...summary(p.kp,p.st||{})});if(!r.ok)throw 0;
+  try{const r=await api({a:"save",token:teamTok(),site:siteBase(),id:p.id,title:p.title,client:normEmail(email),status,link:url,...summary(p.kp,p.st||{})});if(!r.ok)throw 0;
     ROWS=null;toast("Saved to the projects list");return true}
   catch(e){toast("Couldn't save to the projects list. Check the internet connection and try again.",1);return false}}
+function signedOut(){try{localStorage.removeItem("kpTeamPass");localStorage.removeItem("kpTeamTok")}catch(e){}$("pMsg").textContent="Your sign-in has ended. Reload the page to sign in again."}
 async function loadRows(){if(!KP_API)return;$("pMsg").textContent="Loading projects…";
-  try{const r=await api({a:"list",key:teamKey()});if(!r.ok)throw 0;ROWS=r.rows;$("pMsg").textContent="";drawRows()}
+  try{const r=await api({a:"list",token:teamTok()});if(r.err==="signin"){signedOut();return}if(!r.ok)throw 0;ROWS=r.rows;$("pMsg").textContent="";drawRows()}
   catch(e){$("pMsg").textContent="Couldn't load the projects list. Check the internet connection, then tap Refresh."}}
 const when=iso=>{if(!iso)return"";const d=new Date(iso);return isNaN(d)?"":d.toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})};
 const stCls=t=>/^approved/i.test(t)?"ok":/link sent/i.test(t)?"draft":"wait";
@@ -527,9 +528,9 @@ function initList(){const hasApi=!!KP_API;$("vtabs").hidden=!hasApi;if(!hasApi)r
     if(b.dataset.act==="open")openRow(r);
     else if(b.dataset.act==="copy")copy(r.clink||r.link);
     else if(b.dataset.act==="rm"){if(rmArm!==r.id){rmArm=r.id;drawRows();setTimeout(()=>{if(rmArm===r.id){rmArm="";drawRows()}},4000);return}
-      rmArm="";try{const x=await api({a:"delete",key:teamKey(),id:r.id});if(!x.ok)throw 0;ROWS=ROWS.filter(y=>y.id!==r.id);drawRows();toast("Removed “"+(r.title||"project")+"” from the list. The client's link still works.")}
+      rmArm="";try{const x=await api({a:"delete",token:teamTok(),id:r.id});if(!x.ok)throw 0;ROWS=ROWS.filter(y=>y.id!==r.id);drawRows();toast("Removed “"+(r.title||"project")+"” from the list. The client's link still works.")}
       catch(err){toast("Couldn't remove it. Try again.",1)}}});
-  $("pSignOut").addEventListener("click",()=>{try{localStorage.removeItem("kpTeamPass")}catch(e){}location.reload()});
+  $("pSignOut").addEventListener("click",()=>{try{localStorage.removeItem("kpTeamPass");localStorage.removeItem("kpTeamTok")}catch(e){}location.reload()});
   const m=location.hash.match(/^#open=([\w-]+)$/);
   if(m){history.replaceState(null,"",location.pathname);setView("list");(async()=>{await loadRows();const r=(ROWS||[]).find(x=>x.id===m[1]);if(r)openRow(r);else toast("That project isn't in the list any more.",1)})()}
   else setView("list")}
