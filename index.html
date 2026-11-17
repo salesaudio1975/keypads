@@ -8,7 +8,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <title>Keypads</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="app.css?v=20261117i">
+<link rel="stylesheet" href="app.css?v=20261117k">
 </head>
 <body data-mode="client">
 <div class="wrap"><div class="gate" id="gate" hidden>
@@ -42,7 +42,7 @@
     <div class="ctl"><span>Case</span><div class="seg" id="case"></div></div>
     <div class="ctl"><span>Text size</span><div class="seg" id="size"></div></div>
     <div class="ctl"><span>Floor</span><div class="seg" id="floorSel"></div></div>
-    <div class="ctl"><span>Size on screen</span><div class="seg" id="viewSel"></div></div>
+    <div class="ctl"><span>Zoom <small class="zhint">(100% = actual size)</small></span><div class="seg zoomseg" id="zoomSel"><button type="button" data-z="-" aria-label="Zoom out">−</button><button type="button" data-z="1" id="zoomVal" title="Back to actual size">100%</button><button type="button" data-z="+" aria-label="Zoom in">+</button></div></div>
   </div>
   <div id="out"></div>
   <p class="note">Engraving is checked like Lutron's engraving tool, 2 lines max. Alisse widths match Lutron's tool; Palladiom, seeTouch, Sunnata and Pico allow about 9 capital letters a line. Names that are too wide show in red. Changes save in this browser until they're sent. This is a mockup for checking layout and wording; colors on screen are approximate.</p>
@@ -63,7 +63,7 @@
   <div class="cols" id="edCols"></div>
   <div class="dfoot">
     <div class="r"><button type="button" class="btnx danger" id="edDel">Delete keypad</button><button type="button" class="btnx" id="edDup">Duplicate</button></div>
-    <div class="r"><button type="submit" class="btnx primary">Done</button></div>
+    <div class="r"><button type="button" class="btnx" id="edCancel">Cancel</button><button type="submit" class="btnx primary" value="done" id="edDone">Done</button></div>
   </div>
 </form></dialog>
 
@@ -90,6 +90,6 @@
   <div class="dfoot"><span></span><div class="r"><button type="submit" class="btnx primary">Got it</button></div></div>
 </form></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="app.js?v=20261117i"></script>
+<script src="app.js?v=20261117k"></script>
 </body>
 </html>

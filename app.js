@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26D";   // shown at the bottom of every page; bump with each release
+const VERSION="11-17-26E";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -165,13 +165,21 @@ $("finBox").addEventListener("click",e=>{
     save();finBar();render();return}
   const seg=b.closest(".finseg");if(!seg)return;setCur(seg.dataset.g,b.dataset.v);save();finBar();render();
 });
-const VIEW={v:ls.get("kp:view")==="compact"?"compact":"actual"};
-function applyView(){document.body.classList.toggle("actual",VIEW.v==="actual")}
-function initView(){segItems("viewSel",[["actual","Actual size"],["compact","Smaller"]],"view",VIEW,v=>{ls.set("kp:view",v);applyView()});applyView()}
+// zoom: 1 = actual size (Lutron inches); remembered on this device
+const ZSTEPS=[.4,.5,.6,.75,.9,1,1.25,1.5,1.75,2];
+let ZOOM=(()=>{const z=+ls.get("kp:zoom");return ZSTEPS.includes(z)?z:ls.get("kp:view")==="compact"?.5:1})();
+function applyView(){document.documentElement.style.setProperty("--zoom",ZOOM);const v=$("zoomVal");if(v){v.textContent=Math.round(ZOOM*100)+"%";v.setAttribute("aria-pressed",ZOOM===1)}
+  const s=$("zoomSel");if(s){s.querySelector('[data-z="-"]').disabled=ZOOM===ZSTEPS[0];s.querySelector('[data-z="+"]').disabled=ZOOM===ZSTEPS[ZSTEPS.length-1]}}
+function setZoom(z){ZOOM=z;ls.set("kp:zoom",z);applyView()}
+function initView(){const s=$("zoomSel");if(s&&!s.dataset.bound){s.dataset.bound=1;s.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const i=ZSTEPS.indexOf(ZOOM);
+  if(b.dataset.z==="-")setZoom(ZSTEPS[Math.max(0,i-1)]);else if(b.dataset.z==="+")setZoom(ZSTEPS[Math.min(ZSTEPS.length-1,i+1)]);else setZoom(1)})}
+  applyView()}
+document.addEventListener("keydown",e=>{if(e.target.closest&&e.target.closest("input,textarea,select,dialog"))return;if(e.ctrlKey||e.metaKey||e.altKey)return;const i=ZSTEPS.indexOf(ZOOM);
+  if(e.key==="+"||e.key==="=")setZoom(ZSTEPS[Math.min(ZSTEPS.length-1,i+1)]);else if(e.key==="-")setZoom(ZSTEPS[Math.max(0,i-1)]);else if(e.key==="0")setZoom(1)});
 function initBar(){initView();fix();finBar();segItems("case",CASES,"case");segItems("size",[["14","14 pt"],["12","12 pt"]],"size")}
 
 // ---------- keypad editor ----------
-const ed=$("ed");let cur=-1;
+const ed=$("ed");let cur=-1,edSnap=null,edKeep=false;
 const layLabel=l=>l==="1"?"1 button":/\+/.test(l)?l.split(" + ").length+" columns: "+l:l+" buttons, 1 column";
 $("edLay").innerHTML=`<optgroup label="Alisse">${LAYOUTS.map(l=>`<option value="a:${l}">Alisse ${layLabel(l)}</option>`).join("")}</optgroup>`+
   [["pal",0],["palsq",0],["see",0],["see",1],["sun",0],["sun",1],["pico",0]].map(([f,h])=>`<optgroup label="${FAMS[f].n}${h?" hybrid (keypad + dimmer)":""}">${TYPES.filter(t=>t[1]===f&&!!(t[6]&&t[6].hy)===!!h).map(t=>`<option value="${t[0]}">${esc(t[2])}${t[3]?" · "+t[3]:""}</option>`).join("")}</optgroup>`).join("");
@@ -179,7 +187,7 @@ function fillFin(){const k=D.kp[cur],g=grpOf(k);
   $("edFin").innerHTML=`<option value="">Same as project (${esc(finName(projFin(g),g))})</option>`+finList(g).map(([v,l])=>`<option value="${v}">${esc(l+codeOf(g,v))}</option>`).join("");
   $("edFin").value=k.finish&&finOk(g,k.finish)?k.finish:""}
 const COLNAME={1:["Buttons (top to bottom)"],2:["Left column (top to bottom)","Right column (top to bottom)"],3:["Left column","Middle column","Right column"]};
-function openEd(i){cur=i;const k=D.kp[i];
+function openEd(i){cur=i;const k=D.kp[i];edSnap=clone(k);edKeep=false;ed.returnValue="";
   $("edTitle").textContent="Keypad "+k.n;$("edN").value=k.n;$("edLoc").value=k.loc||"";$("edFloor").value=k.floor||"";
   $("floorList").innerHTML=floors().map(f=>`<option value="${esc(f)}">`).join("");
   const sel=$("edLay"),ln=typeOf(k)?k.type:"a:"+layName(k.cols);
@@ -201,7 +209,7 @@ function checkInputs(){const k=D.kp[cur];
   });
 }
 function edPreview(){$("edPv").className="pv "+wallCls(D.kp[cur]);$("edPv").innerHTML=plate(D.kp[cur]).html}
-function changed(){save();render();if(cur>=0)edPreview();toast("Saved on this device")}
+function changed(){save();render();if(cur>=0)edPreview()}
 $("edCols").addEventListener("input",e=>{const i=e.target.dataset.b;if(i===undefined)return;D.kp[cur].labels[+i]=e.target.value;checkInputs();changed()});
 $("edN").addEventListener("input",e=>{D.kp[cur].n=e.target.value;$("edTitle").textContent="Keypad "+e.target.value;changed()});
 $("edLoc").addEventListener("input",e=>{D.kp[cur].loc=e.target.value;changed()});
@@ -215,9 +223,13 @@ function setType(k,v){
 let delArm=0;
 $("edDel").addEventListener("click",()=>{const b=$("edDel");
   if(Date.now()-delArm>4000){delArm=Date.now();b.textContent="Tap again to delete";setTimeout(()=>{b.textContent="Delete keypad"},4000);return}
-  delArm=0;b.textContent="Delete keypad";const k=D.kp[cur];D.kp.splice(cur,1);ed.close();save();render();toast("Keypad "+k.n+" deleted")});
+  delArm=0;b.textContent="Delete keypad";const k=D.kp[cur];D.kp.splice(cur,1);edKeep=true;ed.close();save();render();toast("Keypad "+k.n+" deleted")});
 $("edDup").addEventListener("click",()=>{const k=clone(D.kp[cur]);delete k.ok;k.n=nextN();D.kp.splice(cur+1,0,k);save();render();openEd(cur+1);toast("Copied as keypad "+k.n)});
-ed.addEventListener("close",()=>{cur=-1;delArm=0;$("edDel").textContent="Delete keypad"});
+$("edCancel").addEventListener("click",()=>ed.close("cancel"));
+ed.addEventListener("close",()=>{
+  if(cur>=0&&edSnap&&!edKeep&&ed.returnValue!=="done"&&JSON.stringify(D.kp[cur])!==JSON.stringify(edSnap)){D.kp[cur]=edSnap;save();render();toast("Changes canceled")}
+  else if(ed.returnValue==="done"&&cur>=0&&JSON.stringify(D.kp[cur])!==JSON.stringify(edSnap))toast("Keypad "+D.kp[cur].n+" saved");
+  edSnap=null;edKeep=false;cur=-1;delArm=0;$("edDel").textContent="Delete keypad"});
 function nextN(){const ns=D.kp.map(k=>parseInt(k.n,10)).filter(n=>!isNaN(n));return String((ns.length?Math.max(...ns):0)+1)}
 $("addBtn").addEventListener("click",()=>{const fl=st.floor!=="All"?st.floor:(D.kp.length?D.kp[D.kp.length-1].floor:"First");
   const last=D.kp[D.kp.length-1],nk={n:nextN(),floor:fl,loc:"",cols:[3],labels:["","",""]};if(last&&last.type)setType(nk,last.type);
