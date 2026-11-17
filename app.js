@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26H";   // shown at the bottom of every page; bump with each release
+const VERSION="11-17-26I";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -26,7 +26,7 @@ const METAL=[["SN","Satin Nickel","#b9b6ad"],["BN","Bright Nickel","#d4d4d0"],["
 const FG={alisse:null,
   pal:[...METAL,["CWH","Clear White Glass","#f7f7f7"],["CBL","Clear Black Glass","#111111"],...PLASTIC],
   see:[...PLASTIC,...METAL],
-  sun:[["WH","White","#fbfbf8"],["LA","Light Almond","#eee3cf"],["IV","Ivory","#f3ecd8"],["BL","Black","#1b1b1b"],["SW","Snow","#f4f4f2"],["PM","Pumice","#ddd7cb"],["RW","Architectural White","#ecebe6"],["BI","Biscuit","#e7dcc6"],["TP","Taupe","#a99c8a"],["MN","Midnight","#2a2d33"]],
+  sun:[["WH","White","#fbfbf8"],["LA","Light Almond","#eee3cf"],["IV","Ivory","#f3ecd8"],["BL","Black","#1b1b1b"],["SW","Snow","#f4f4f2"],["PM","Pumice","#e2dccc"],["RW","Architectural White","#ecebe6"],["BI","Biscuit","#e7dcc6"],["TP","Taupe","#a99c8a"],["MN","Midnight","#2a2d33"]],
   pico:[["WH","White","#fbfbf8"],["SW","Snow","#f4f4f2"],["IV","Ivory","#f3ecd8"],["LA","Light Almond","#eee3cf"],["AL","Almond","#e6d6bb"],["BE","Beige","#d9c9ac"],["TP","Taupe","#a99c8a"],["GR","Gray","#9a9a98"],["BR","Brown","#5a3d2b"],["BL","Black","#1b1b1b"],["MN","Midnight","#2a2d33"]]};
 const GROUPS=["alisse","pal","see","sun","pico"],GDEF={pal:"WH",see:"WH",sun:"WH",pico:"WH"};
 const TALIAS={"see-1rl":"see-1","see-2rl":"see-2"};   // early names
