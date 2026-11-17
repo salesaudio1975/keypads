@@ -196,3 +196,9 @@ textarea.paste{font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;color:var(--f
 .kp.ok .wallbox::after{content:"APPROVED";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-18deg);padding:4px 10px;border:3px solid rgba(198,40,40,.55);border-radius:6px;color:rgba(198,40,40,.6);font:800 22px/1 var(--display,Arial),Arial,sans-serif;letter-spacing:.12em;pointer-events:none;white-space:nowrap;background:rgba(255,255,255,.06)}
 @media print{.apbar,.apf{display:none!important}}
 @media (max-width:440px){.kp.ok .wallbox::after{font-size:17px;border-width:2.5px;padding:3px 8px}}
+/* Actual size: 1 CSS inch = 1 real inch on a normal desktop screen (Alisse 3.55 in wide) */
+body.actual #out .plate,body.actual #out .plate.fam{--pw:3.55in}
+body.actual #out .grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,calc(3.55in + 40px)),1fr))}
+body.actual #out .grid:has(.plate.three){grid-template-columns:repeat(auto-fill,minmax(min(100%,calc(4.82in + 40px)),1fr))}
+@media (max-width:440px){body.actual #out .plate,body.actual #out .plate.fam{--pw:min(3.55in,calc((100vw - 60px)/1.36))}body.actual #out .grid{grid-template-columns:minmax(0,1fr)}}
+@media print{body.actual #out .plate,body.actual #out .plate.fam{--pw:3.55in}}

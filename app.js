@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26C";   // shown at the bottom of every page; bump with each release
+const VERSION="11-17-26D";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -135,12 +135,12 @@ function render(){
       return `<div class="kp${k.ok?" ok":""}" tabindex="0" role="button" data-i="${i}" aria-label="${k.ok?"Keypad "+esc(k.n)+", approved":"Edit keypad "+esc(k.n)}"><button type="button" class="okb" data-ok="${i}" aria-pressed="${!!k.ok}" title="${k.ok?"Approved. Tap to unlock":"Approve and lock this keypad"}" aria-label="${k.ok?"Unlock keypad "+esc(k.n):"Approve keypad "+esc(k.n)}">✓</button><div class="wallbox ${wallCls(k)}">${p.html}</div><div class="cap"><b>Keypad ${esc(k.n)}<span class="tag">${esc(tagOf(k))}</span></b>${own?`<small class="own">${esc(finName(k.finish,grpOf(k))+codeOf(grpOf(k),k.finish))} (own finish)</small>`:""}<small>${esc(k.loc||"")}</small>${p.bad.length?`<span class="warn">Too long for Lutron: ${p.bad.map(esc).join(", ")}</span>`:""}${k.ok?`<span class="appr">✓ Approved</span>`:`<span class="edit">Tap to edit</span>`}</div></div>`}).join("")}</div></section>`;
   }).join("")||`<p class="hint">No keypads yet. Tap “+ Add keypad”${MODE==="builder"?", or paste them from the Google Sheet above":""}.</p>`;
 }
-function segItems(id,items,key){
+function segItems(id,items,key,obj=st,after){
   const el=$(id);
   if(items)el.innerHTML=items.map(([v,l,c])=>`<button type="button" data-v="${esc(v)}">${c?`<i class="sw" style="background:${c}"></i>`:""}${esc(l)}</button>`).join("");
-  el.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st[key]));
-  if(!el.dataset.bound){el.dataset.bound=1;el.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;st[key]=b.dataset.v;save();
-    el.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===st[key]));render()})}
+  el.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===obj[key]));
+  if(!el.dataset.bound){el.dataset.bound=1;el.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;obj[key]=b.dataset.v;if(after)after(b.dataset.v);else save();
+    el.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===obj[key]));render()})}
 }
 function finBar(){
   const gs=groups(),multi=gs.length>1;finBar.last=gs.join();
@@ -165,7 +165,10 @@ $("finBox").addEventListener("click",e=>{
     save();finBar();render();return}
   const seg=b.closest(".finseg");if(!seg)return;setCur(seg.dataset.g,b.dataset.v);save();finBar();render();
 });
-function initBar(){fix();finBar();segItems("case",CASES,"case");segItems("size",[["14","14 pt"],["12","12 pt"]],"size")}
+const VIEW={v:ls.get("kp:view")==="compact"?"compact":"actual"};
+function applyView(){document.body.classList.toggle("actual",VIEW.v==="actual")}
+function initView(){segItems("viewSel",[["actual","Actual size"],["compact","Smaller"]],"view",VIEW,v=>{ls.set("kp:view",v);applyView()});applyView()}
+function initBar(){initView();fix();finBar();segItems("case",CASES,"case");segItems("size",[["14","14 pt"],["12","12 pt"]],"size")}
 
 // ---------- keypad editor ----------
 const ed=$("ed");let cur=-1;
