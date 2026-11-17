@@ -2,20 +2,23 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
+const VERSION="11-17-26A";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
-  pal:{n:"Palladiom",fg:"pal",pt:14,z:1.25,g:[2.95,4.72,.835,1.05,1.28,3.0,0,.45]},
+  pal:{n:"Palladiom",fg:"pal",pt:14,z:1.25,g:[2.95,4.71,.825,.95,1.3,2.8,0,.45]},   // Lutron drawing: plate 2.95 x 4.71, keys 1.3 x 2.8
   palsq:{n:"Palladiom Square",fg:"pal",pt:14,z:1.1,g:[3.39,3.39,.42,.42,2.55,2.55,0,.42],cls:"pal"},
   see:{n:"seeTouch",fg:"see",pt:10,z:1.3,g:[2.94,4.69,.815,1.0,1.31,2.75,0,.36]},
   sun:{n:"Sunnata",fg:"sun",pt:11,z:1.3,g:[2.94,4.69,.92,1.08,1.1,2.53,.07,.32]},
-  pico:{n:"Pico",fg:"pico",pt:9,z:1.7,g:[1.3,3.04,.19,.14,1.06,2.84,0,.3]}};
+  pico:{n:"Pico",fg:"pico",pt:9,z:1.7,g:[1.3,2.6,.19,.12,1.04,2.42,0,.3]}};   // Pico remote 1.30 x 2.60 (33 x 66 mm)
 // [id, family, name, part, buttons per column, raise/lower]
 const TYPES=[["pal-2","pal","Palladiom 2-button","HQWT-U-P2W",[2],0],["pal-3","pal","Palladiom 3-button","HQWT-U-P3W",[3],0],["pal-4","pal","Palladiom 4-button","HQWT-U-P4W",[4],0],["pal-3rl","pal","Palladiom 3-button raise/lower","HQWT-U-PRW",[3],1],
   ["palsq-4","palsq","Palladiom Square 4-button","HQWT-S-P4W",[4],0],["palsq-3rl","palsq","Palladiom Square 3-button raise/lower","HQWT-S-PRW",[3],1],["palsq-44","palsq","Palladiom Square 8-button (4+4)","HQWT-S-P44W",[4,4],0],["palsq-33rl","palsq","Palladiom Square 6-button raise/lower (3+3)","HQWT-S-PRRW",[3,3],1],
-  ["see-1rl","see","seeTouch 1-button raise/lower","",[1],1],["see-2rl","see","seeTouch 2-button raise/lower","",[2],1],["see-3","see","seeTouch 3-button","HQWA-W3BSI",[3],0],["see-3rl","see","seeTouch 3-button raise/lower","",[3],1],["see-4","see","seeTouch 4-button","HQWA-W4BSI",[4],0],
-  ["see-5","see","seeTouch 5-button","HQWA-W5BI",[5],0],["see-5rl","see","seeTouch 5-button raise/lower","",[5],1],["see-6","see","seeTouch 6-button","HQWA-W6BI",[6],0],["see-6rl","see","seeTouch 6-button raise/lower","HQWD-W6BRL",[6],1],["see-7","see","seeTouch 7-button","",[7],0],
+  ["see-1","see","seeTouch 1-button","HQWD-W1B",[1],0,{sl:"---b---"}],["see-2","see","seeTouch 2-button","HQWD-W2BS",[2],0,{sl:"--b-b--"}],["see-3","see","seeTouch 3-button","HQWD-W3BS",[3],0,{sl:"-b-b-b-"}],["see-3rl","see","seeTouch 3-button raise/lower","HQWD-W3BSRL",[3],1,{sl:"b-b-b-r"}],["see-3s","see","seeTouch 3-scene raise/lower","HQWD-W3S",[3],1,{sl:"bbb---r"}],["see-4","see","seeTouch 4-button","HQWD-W4BS",[4],0,{sl:"b-b-b-b"}],["see-4s","see","seeTouch 4-scene raise/lower","HQWD-W4S",[4],1,{sl:"bbbb--r"}],["see-5","see","seeTouch 5-button","HQWD-W5B",[5],0,{sl:"-bbbbb-"}],
+  ["see-5rl","see","seeTouch 5-button raise/lower","HQWD-W5BRL",[5],1,{sl:"bbbbb-r"}],["see-5ir","see","seeTouch 5-button raise/lower + IR","HQWD-W5BIR",[5],1,{sl:"bbbbbir"}],["see-6","see","seeTouch 6-button","HQWD-W6B",[6],0,{sl:"bbbbbb-"}],["see-6rl","see","seeTouch 6-button raise/lower","HQWD-W6BRL",[6],1,{sl:"bbbbbbr"}],["see-7","see","seeTouch 7-button","HQWD-W7B",[7],0,{sl:"bbbbbbb"}],["see-1rld","see","seeTouch dual group raise/lower (3+2)","HQWD-W1RLD",[5],1,{sl:"bbb-bbr"}],["see-2rld","see","seeTouch dual group, 2 raise/lower (2+2)","HQWD-W2RLD",[4],1,{sl:"bbr-bbr"}],["see-3bd","see","seeTouch dual group (3+3)","HQWD-W3BD",[6],0,{sl:"bbb-bbb"}],
+  ["seh-1rld","see","seeTouch hybrid dual group raise/lower (3+2)","HQRD-HN1RLD",[5],1,{sl:"bbb-bbr",hy:1}],["seh-2rld","see","seeTouch hybrid dual group, 2 raise/lower (2+2)","HQRD-HN2RLD",[4],1,{sl:"bbr-bbr",hy:1}],["seh-3rl","see","seeTouch hybrid 3-button raise/lower","HQRD-HN3BSRL",[3],1,{sl:"b-b-b-r",hy:1}],["seh-3s","see","seeTouch hybrid 3-scene raise/lower","HQRD-HN3S",[3],1,{sl:"bbb---r",hy:1}],["seh-4s","see","seeTouch hybrid 4-scene raise/lower","HQRD-HN4S",[4],1,{sl:"bbbb--r",hy:1}],["seh-5rl","see","seeTouch hybrid 5-button raise/lower","HQRD-HN5BRL",[5],1,{sl:"bbbbb-r",hy:1}],["seh-6rl","see","seeTouch hybrid 6-button raise/lower","HQRD-HN6BRL",[6],1,{sl:"bbbbbbr",hy:1}],
   ["sun-2","sun","Sunnata 2-button","HRST-W2B",[2],0],["sun-3rl","sun","Sunnata 3-button raise/lower","HRST-W3RL",[3],1],["sun-4","sun","Sunnata 4-button","HRST-W4B",[4],0],
+  ["sunh-2","sun","Sunnata hybrid 2-button","HRST-HN2B",[2],0,{hy:1}],["sunh-3rl","sun","Sunnata hybrid 3-button raise/lower","HRST-HN3RL",[3],1,{hy:1}],["sunh-4","sun","Sunnata hybrid 4-button","HRST-HN4B",[4],0,{hy:1}],
   ["pico-2","pico","Pico 2-button","PJ2-2B",[2],0],["pico-2rl","pico","Pico 2-button raise/lower","PJ2-2BRL",[2],1],["pico-3","pico","Pico 3-button","PJ2-3B",[3],0],["pico-3rl","pico","Pico 3-button raise/lower","PJ2-3BRL",[3],1],["pico-4","pico","Pico 4-button","PJ2-4B",[4],0]];
 // finish groups [code, name, swatch]; colors on screen are close, not exact
 const PLASTIC=[["WH","White","#fbfbf8"],["IV","Ivory","#f3ecd8"],["LA","Light Almond","#eee3cf"],["AL","Almond","#e6d6bb"],["BE","Beige","#d9c9ac"],["TP","Taupe","#a99c8a"],["GR","Gray","#9a9a98"],["SI","Sienna","#8a5a3c"],["BR","Brown","#5a3d2b"],["BL","Black","#1b1b1b"]];
@@ -26,11 +29,14 @@ const FG={alisse:null,
   sun:[["WH","White","#fbfbf8"],["LA","Light Almond","#eee3cf"],["IV","Ivory","#f3ecd8"],["BL","Black","#1b1b1b"],["SW","Snow","#f4f4f2"],["RW","Architectural White","#ecebe6"],["BI","Biscuit","#e7dcc6"],["TP","Taupe","#a99c8a"],["MN","Midnight","#2a2d33"]],
   pico:[["WH","White","#fbfbf8"],["SW","Snow","#f4f4f2"],["IV","Ivory","#f3ecd8"],["LA","Light Almond","#eee3cf"],["AL","Almond","#e6d6bb"],["BE","Beige","#d9c9ac"],["TP","Taupe","#a99c8a"],["GR","Gray","#9a9a98"],["BR","Brown","#5a3d2b"],["BL","Black","#1b1b1b"],["MN","Midnight","#2a2d33"]]};
 const GROUPS=["alisse","pal","see","sun","pico"],GDEF={pal:"WH",see:"WH",sun:"WH",pico:"WH"};
-const typeOf=k=>k&&k.type?TYPES.find(t=>t[0]===k.type)||null:null;
+const TALIAS={"see-1rl":"see-1","see-2rl":"see-2"};   // early names
+const typeOf=k=>k&&k.type?TYPES.find(t=>t[0]===(TALIAS[k.type]||k.type))||null:null;
 const famOf=k=>{const t=typeOf(k);return t?t[1]:"alisse"};
 const grpOf=k=>FAMS[famOf(k)].fg;
 const finList=g=>g==="alisse"?FIN:FG[g];
-const codeOf=(g,v)=>g!=="alisse"&&MODE==="builder"?" ("+v+")":"";   // Lutron finish code, team page only
+// Alisse finish codes from Lutron's spec sheet 3691154
+const ACODE={agedbrass:"AB",agedbronze:"AZ",brushedbrass:"BRB",nickel:"SN",chrome:"BC",graphite:"GP",champagne:"CP",snowwhite:"SWH",matteblack:"BL",archwhite:"AWH",brilliantwhite:"BWH"};
+const codeOf=(g,v)=>MODE!=="builder"?"":g==="alisse"?(ACODE[v]?" ("+ACODE[v]+")":""):" ("+v+")";   // Lutron finish code, team page only
 const CASES=[["free","free-form"],["title","Title Case"],["caps","ALL CAPS"],["lower","all lower case"]];
 const LAYOUTS=["1","2","3","1 + 1","1 + 3","2 + 2","3 + 1","3 + 3","1 + 1 + 1","1 + 3 + 3","2 + 2 + 2","3 + 3 + 1","3 + 3 + 3"];
 const $=id=>document.getElementById(id);
@@ -83,14 +89,17 @@ function lum(h){const n=parseInt(h.slice(1),16),c=[n>>16,n>>8&255,n&255].map(v=>
 function tint(h,a){const n=parseInt(h.slice(1),16);return "#"+[n>>16,n>>8&255,n&255].map(v=>Math.max(0,Math.min(255,Math.round(v+a*255))).toString(16).padStart(2,"0")).join("")}
 function famPlate(k){
   const t=typeOf(k),F=FAMS[t[1]],[W,H,X,Y,FW,FH,GAP,RLH]=F.g,lim=limitOf(k),bad=[];let idx=0;
-  const cols=t[4].map(cnt=>{let h="";
+  const lab=()=>{const raw=(k.labels[idx]||"").trim(),tx=kase(raw),ln=raw?fitLines(tx,lim):[];if(raw&&!ln)bad.push(raw);idx++;
+    return `<span class="tx${raw&&!ln?" bad":""}">${!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(tx)}</span>`};
+  const sl=t[6]&&t[6].sl;
+  const cols=sl?`<div class="kcol slots">${[...sl].map(c=>c==="b"?`<div class="key">${lab()}</div>`:c==="r"?`<div class="key rl"><span>▽</span><span>△</span></div>`:c==="i"?`<div class="ir"><i></i></div>`:`<div class="gapslot"></div>`).join("")}</div>`:t[4].map(cnt=>{let h="";
     for(let i=0;i<cnt;i++,idx++){const raw=(k.labels[idx]||"").trim(),tx=kase(raw),ln=raw?fitLines(tx,lim):[];if(raw&&!ln)bad.push(raw);
       h+=`<div class="key"><span class="tx${raw&&!ln?" bad":""}">${!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(tx)}</span></div>`}
     if(t[5])h+=`<div class="key rl" style="flex:0 0 calc(var(--pw)*${RLH}/3.55)"><span>▽</span><span>△</span></div>`;
     return `<div class="kcol">${h}</div>`}).join("");
   const g=F.fg,c=(finList(g).find(f=>f[0]===kFin(k))||finList(g)[0])[2],dk=lum(c)<.18;
   const vars=`--pf:linear-gradient(150deg,${tint(c,.05)},${c} 55%,${tint(c,.025)});--pedge:rgba(0,0,0,${dk?.35:.14});--kc:${tint(c,dk?.03:-.012)};--ink:${dk?"rgba(255,255,255,.85)":"rgba(0,0,0,.85)"};--pt:${+k.pt||F.pt};--z:${F.z||1};--gap:calc(var(--pw)*${GAP}/3.55)`;
-  return {html:`<div class="plate fam ${F.cls||t[1]}${dk?" dk":""}" style="width:calc(var(--pw)*${W}/3.55);aspect-ratio:${W}/${H};${vars}"><div class="keys" style="left:${(X/W*100).toFixed(2)}%;top:${(Y/H*100).toFixed(2)}%;width:${(FW/W*100).toFixed(2)}%;height:${(FH/H*100).toFixed(2)}%">${cols}</div></div>`,bad};
+  return {html:`<div class="plate fam ${F.cls||t[1]}${dk?" dk":""}${t[6]&&t[6].hy?" hy":""}" style="width:calc(var(--pw)*${W}/3.55);aspect-ratio:${W}/${H};${vars}"><div class="keys" style="left:${(X/W*100).toFixed(2)}%;top:${(Y/H*100).toFixed(2)}%;width:${(FW/W*100).toFixed(2)}%;height:${(FH/H*100).toFixed(2)}%">${cols}</div></div>`,bad};
 }
 function plate(k){
   if(typeOf(k))return famPlate(k);
@@ -108,7 +117,7 @@ const floors=()=>[...new Set(D.kp.map(k=>k.floor||"No floor"))];
 const wallCls=k=>typeOf(k)?"famwall":`f-${kFin(k)} ${st.size==="12"?"pt12":""}`;
 const finName=(v,g="alisse")=>(finList(g).find(f=>f[0]===v)||[0,v])[1];
 const typeName=k=>{const t=typeOf(k);return t?t[2]:"Alisse "+layName(k.cols)};
-const tagOf=k=>{const t=typeOf(k),nb=k.cols.reduce((a,b)=>a+b,0);return (t?FAMS[t[1]].n+" ":groups().length>1?"Alisse ":"")+nb+"-button"};
+const tagOf=k=>{const t=typeOf(k),nb=k.cols.reduce((a,b)=>a+b,0);return (t?FAMS[t[1]].n+(t[6]&&t[6].hy?" hybrid":"")+" ":groups().length>1?"Alisse ":"")+nb+"-button"};
 const groups=()=>{const s=new Set(D.kp.map(grpOf));if(!s.size)s.add("alisse");return GROUPS.filter(g=>s.has(g))};
 function render(){
   const name=D.title||(MODE==="builder"?"New project":"Your");
@@ -160,7 +169,7 @@ function initBar(){fix();finBar();segItems("case",CASES,"case");segItems("size",
 const ed=$("ed");let cur=-1;
 const layLabel=l=>l==="1"?"1 button":/\+/.test(l)?l.split(" + ").length+" columns: "+l:l+" buttons, 1 column";
 $("edLay").innerHTML=`<optgroup label="Alisse">${LAYOUTS.map(l=>`<option value="a:${l}">Alisse ${layLabel(l)}</option>`).join("")}</optgroup>`+
-  ["pal","palsq","see","sun","pico"].map(f=>`<optgroup label="${FAMS[f].n}">${TYPES.filter(t=>t[1]===f).map(t=>`<option value="${t[0]}">${esc(t[2])}</option>`).join("")}</optgroup>`).join("");
+  [["pal",0],["palsq",0],["see",0],["see",1],["sun",0],["sun",1],["pico",0]].map(([f,h])=>`<optgroup label="${FAMS[f].n}${h?" hybrid (keypad + dimmer)":""}">${TYPES.filter(t=>t[1]===f&&!!(t[6]&&t[6].hy)===!!h).map(t=>`<option value="${t[0]}">${esc(t[2])}${t[3]?" · "+t[3]:""}</option>`).join("")}</optgroup>`).join("");
 function fillFin(){const k=D.kp[cur],g=grpOf(k);
   $("edFin").innerHTML=`<option value="">Same as project (${esc(finName(projFin(g),g))})</option>`+finList(g).map(([v,l])=>`<option value="${v}">${esc(l+codeOf(g,v))}</option>`).join("");
   $("edFin").value=k.finish&&finOk(g,k.finish)?k.finish:""}
@@ -238,13 +247,22 @@ function parseTable(text){
 
 function findType(s){s=String(s||"").trim().toLowerCase();if(!s)return null;
   return TYPES.find(t=>t[2].toLowerCase()===s||(t[3]&&s.startsWith(t[3].toLowerCase()))||t[0]===s)||null}
-function findFin(g,s){s=String(s||"").trim().toLowerCase();if(!s)return null;const f=finList(g).find(f=>f[1].toLowerCase()===s||f[0].toLowerCase()===s);return f?f[0]:null}
+function findFin(g,s){s=String(s||"").trim().toLowerCase().replace(/\s*\([a-z]{2,3}\)$/,"");if(!s)return null;const f=finList(g).find(f=>f[1].toLowerCase()===s||f[0].toLowerCase()===s||(g==="alisse"&&(ACODE[f[0]]||"").toLowerCase()===s));return f?f[0]:null}
 // a Lutron engraving report's model number -> one of our types
-function typeForModel(mt){if(!mt)return null;const sum=t=>t[4].reduce((a,b)=>a+b,0);
+// exact match on a Lutron model or replacement-kit number: RKD-H6BRL -> hybrid 6BRL, HQWD-W3BS -> 3BS, HRST-HN4B -> Sunnata hybrid 4B
+function typeByModel(m){m=String(m||"").toUpperCase();
+  let x=m.match(/^(RKD|HQWD|HQWA|HQRD|HQRA|RRD|HWD|HQWAS)-(HN|H|W)(\d[A-Z]*)/);
+  if(x){const hy=x[2]!=="W",code=x[3].replace(/I$/,"").replace(/^(\d)BS?(RL)?$/,(q,n,rl)=>n+"B"+(rl||""));
+    const norm=p=>{const y=p.match(/-(?:HN|W)(\d[A-Z]*)$/);return y?y[1].replace(/^(\d)BS?(RL)?$/,(q,n,rl)=>n+"B"+(rl||"")):""};
+    const c=TYPES.filter(t=>t[1]==="see"&&norm(t[3])===code);return c.find(t=>!!(t[6]&&t[6].hy)===hy)||c[0]||null}
+  x=m.match(/^(HRST|RRST)-(HN|W)(\d[A-Z]+)/);
+  if(x){const hy=x[2]==="HN";return TYPES.find(t=>t[1]==="sun"&&t[3].endsWith(x[3])&&!!(t[6]&&t[6].hy)===hy)||null}
+  return TYPES.filter(t=>t[3]&&m.startsWith(t[3])).sort((p,q)=>q[3].length-p[3].length)[0]||null}
+function typeForModel(mt,model){const e=typeByModel(model);if(e)return e;if(!mt)return null;const sum=t=>t[4].reduce((a,b)=>a+b,0);
   const same=TYPES.filter(t=>t[1]===mt.fam);
   return same.find(t=>sum(t)===mt.n&&!!t[5]===!!mt.rl)||same.find(t=>sum(t)===mt.n)||same.find(t=>sum(t)>=mt.n)||same[same.length-1]||null}
 function reportToKp(rs){
-  return rs.map((r,i)=>{const t=typeForModel(r.mt);const k={n:String(i+1),floor:r.floor||"Main",loc:r.loc||"",cols:t?t[4].slice():guessLayout(r.labels.length),labels:[]};
+  return rs.map((r,i)=>{const t=typeForModel(r.mt,r.model);const k={n:String(i+1),floor:r.floor||"Main",loc:r.loc||"",cols:t?t[4].slice():guessLayout(r.labels.length),labels:[]};
     if(t)k.type=t[0];const n=k.cols.reduce((a,b)=>a+b,0);k.labels=r.labels.slice(0,n);while(k.labels.length<n)k.labels.push("");
     const g=grpOf(k);let f=findFin(g,r.color);
     if(!f){const code=(String(r.model).match(/-([A-Z]{2,3})(-[A-Z0-9]+)?$/)||[])[1];if(code)f=findFin(g,code)||findFin(g,code.slice(-2))}
@@ -264,7 +282,7 @@ function labelsToKp(j){
     if(!mt||(fam&&mt.fam.replace("sq","")!==fam.replace("sq","")))mt={fam:fam||"see",n:bs.length,rl:!!x.raise_lower};
     if(fam==="palsq")mt.fam="palsq";
     const k={n:String(i+1),floor:x.floor||"Main",loc:[x.room,x.name].filter(Boolean).filter((v,i,a)=>v!==a[i-1]).join(" · "),cols:[],labels:[]};
-    if(mt.fam==="alisse"||fam==="alisse"){k.cols=guessLayout(bs.length)}else{const t=typeForModel(mt);if(t){k.type=t[0];k.cols=t[4].slice()}else k.cols=guessLayout(bs.length)}
+    if(mt.fam==="alisse"||fam==="alisse"){k.cols=guessLayout(bs.length)}else{const t=typeForModel(mt,x.model);if(t){k.type=t[0];k.cols=t[4].slice()}else k.cols=guessLayout(bs.length)}
     const n=k.cols.reduce((a,b)=>a+b,0);k.labels=bs.slice(0,n);while(k.labels.length<n)k.labels.push("");
     const f=findFin(grpOf(k),x.finish_code)||findFin(grpOf(k),(String(x.faceplate||x.model||"").match(/-([A-Z]{2,3})$/)||[])[1]);if(f)k.finish=f;
     return k});
@@ -420,4 +438,5 @@ function startBuilder(){
   $("app").hidden=false;initBar();render();
 }
 
+document.body.insertAdjacentHTML("beforeend",`<p class="ver">Version ${VERSION}</p>`);
 if(MODE==="builder")startBuilder();else startClient();
