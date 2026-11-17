@@ -1,0 +1,78 @@
+// Reads a Lutron Designer engraving report (PDF) into keypads.
+// pages: [[{s:text, x, y, h}]] in PDF points (y grows upward), one array per page.
+"use strict";
+(function(root){
+const MODEL=/^[A-Z]{2,6}\d?(-[A-Z0-9]+){1,4}$/;
+function lines(items){ // group text items into lines, top to bottom
+  const its=items.filter(i=>i.s.trim()).sort((a,b)=>b.y-a.y||a.x-b.x),out=[];
+  for(const it of its){const l=out.find(l=>Math.abs(l.y-it.y)<2&&Math.abs(l.x-it.x)<160);
+    if(l){l.items.push(it)}else out.push({y:it.y,x:it.x,h:it.h,items:[it]})}
+  for(const l of out){l.items.sort((a,b)=>a.x-b.x);l.x=l.items[0].x;l.t=l.items.map(i=>i.s.trim()).join(" ").replace(/\s+/g," ").trim()}
+  return out.sort((a,b)=>b.y-a.y||a.x-b.x);
+}
+function after(items,label){ // the text right of a label like "Color:"
+  const l=items.find(i=>i.s.trim()===label);if(!l)return "";
+  const r=items.filter(i=>Math.abs(i.y-l.y)<2&&i.x>l.x&&i.x<l.x+230&&i.s.trim()).sort((a,b)=>a.x-b.x);
+  const near=[];let x=l.x+l.w;for(const i of r){if(i.x-x>120&&near.length)break;if(/:$/.test(i.s.trim()))break;near.push(i.s.trim());x=i.x+(i.w||0)}
+  return near.join(" ").trim();
+}
+// model number -> {fam, n, rl, cols}
+function modelType(m){
+  m=String(m||"").toUpperCase();let r;
+  const cnt=s=>{let x;if((x=s.match(/(\d)(\d)?B?RL/)))return{n:+x[1],rl:1};if((x=s.match(/(\d)B/)))return{n:+x[1],rl:0};if((x=s.match(/P(\d)W/)))return{n:+x[1],rl:0};return null};
+  if(/^PJ2?-/.test(m)){r=cnt(m.replace(/^PJ2?-/,""))||{n:4,rl:0};return{fam:"pico",...r}}
+  if(/^(STBK|HRST|RRST|STRK|ST)-/.test(m)){r=cnt(m.split("-")[1]||"")||{n:4,rl:0};return{fam:"sun",...r}}
+  if(/^(PBT|HQWT|HQRT|HWT|LQWT)-/.test(m)){
+    const sq=/-S-/.test(m)||/^PBT-S/.test(m);
+    if(/PRRW/.test(m))return{fam:"palsq",n:6,rl:1,cols:[3,3]};
+    if(/P44W/.test(m))return{fam:"palsq",n:8,rl:0,cols:[4,4]};
+    if(/PRW|3RL/.test(m))return{fam:sq?"palsq":"pal",n:3,rl:1};
+    let x=m.match(/-P?(\d)W/)||m.match(/P(\d)W/);return{fam:sq?"palsq":"pal",n:x?+x[1]:4,rl:0}}
+  if(/^(RKD|HQWA|HQWD|HQRD|HQWAS|RRD|HWD|HQRA|QSWS2|RRA|PD)-/.test(m)||/W\dB/.test(m)){
+    const s=m.split("-").slice(1).join("-");let x;
+    if((x=s.match(/(\d)BRL/)))return{fam:"see",n:+x[1],rl:1};
+    if((x=s.match(/(\d)RL/)))return{fam:"see",n:+x[1],rl:1};
+    if((x=s.match(/(\d)B/)))return{fam:"see",n:+x[1],rl:0};
+    return{fam:"see",n:5,rl:1}}
+  return null;
+}
+const FLOORISH=/^(basement|cellar|lower level|ground|main|first|second|third|fourth|attic|roof|garage|\d+(st|nd|rd|th)?\s*(fl|floor|level)\b|level\s*\d|floor\s*\d|.*\bfloor\b|.*\blevel\b)/i;
+function splitLoc(p){const parts=p.split(">").map(s=>s.trim()).filter(Boolean);
+  if(parts.length>1&&FLOORISH.test(parts[0]))return{floor:parts[0],loc:dedupe(parts.slice(1)).join(" · ")};
+  return{floor:"Main",loc:dedupe(parts).join(" · ")}}
+function dedupe(a){return a.filter((s,i)=>s!==a[i-1])}
+function parsePage(items){
+  const L=lines(items);
+  const hi=L.findIndex(l=>/^Device Locations with Identical Engraving/i.test(l.t));if(hi<0)return [];
+  const wi=L.findIndex((l,i)=>i>hi&&/^Wallplate:/.test(l.t));
+  const locs=L.slice(hi+1,wi<0?hi+2:wi).map(l=>l.t).filter(t=>t.includes(">")||t.length);
+  const color=after(items,"Color:");
+  const bb=L.findIndex(l=>/^Backbox Size:|Font Size:/.test(l.t));
+  let lowest=Math.max(wi,bb);L.forEach((l,i)=>{if(i>wi&&/Font Size:|Backbox Size:/.test(l.t))lowest=Math.max(lowest,i)});
+  const mi=L.findIndex((l,i)=>i>lowest&&l.items.length===1&&MODEL.test(l.t));
+  const model=mi>=0?L[mi].t:"";
+  const body=L.filter((l,i)=>i>(mi>=0?mi:lowest)&&!/^Please see|^File Name:|^Sheet:|^LUTRON$/i.test(l.t)&&!/^Sheet:/.test(l.t)&&l.y>40);
+  // columns (2-column keypads): split by x
+  const xs=[...new Set(body.map(l=>Math.round(l.x)))].sort((a,b)=>a-b),cols=[];
+  for(const l of body){let c=cols.find(c=>Math.abs(c.x-l.x)<40);if(!c){c={x:l.x,ls:[]};cols.push(c)}c.ls.push(l)}
+  cols.sort((a,b)=>a.x-b.x);
+  const mt=modelType(model)||{fam:"see",n:Math.max(1,body.length),rl:0};
+  const perCol=mt.cols||[mt.n];
+  const labels=[];
+  cols.forEach((c,ci)=>{const want=perCol[ci]||perCol[perCol.length-1];labels.push(...group(c.ls,want))});
+  return locs.map(p=>({...splitLoc(p),model,color,mt,labels:labels.slice()}));
+}
+function group(ls,want){ // join lines into buttons: big vertical gaps split buttons
+  ls=ls.slice().sort((a,b)=>b.y-a.y);if(!ls.length)return [];
+  let btn=[[ls[0]]];
+  for(let i=1;i<ls.length;i++){const gap=ls[i-1].y-ls[i].y,h=Math.max(ls[i].h,ls[i-1].h)||10;
+    if(gap>h*1.45)btn.push([ls[i]]);else btn[btn.length-1].push(ls[i])}
+  // too many buttons for the model: merge across the smallest gaps
+  while(want&&btn.length>want){let bi=1,bg=1e9;for(let i=1;i<btn.length;i++){const g=btn[i-1][btn[i-1].length-1].y-btn[i][0].y;if(g<bg){bg=g;bi=i}}
+    btn[bi-1]=btn[bi-1].concat(btn[bi]);btn.splice(bi,1)}
+  return btn.map(b=>b.map(l=>l.t).join(" "));
+}
+function parseReport(pages){const out=[];for(const p of pages)out.push(...parsePage(p));return out}
+root.parseReport=parseReport;root.modelType=modelType;
+if(typeof module!=="undefined")module.exports={parseReport,modelType};
+})(typeof window!=="undefined"?window:globalThis);

@@ -8,7 +8,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <title>Keypads</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="app.css?v=20261117">
+<link rel="stylesheet" href="app.css?v=20261117b">
 </head>
 <body data-mode="client">
 <div class="wrap"><div class="gate" id="gate" hidden>
@@ -28,7 +28,7 @@
   <div class="top">
     <div>
       <h1 id="title">Keypads</h1>
-      <p class="sub" id="subline">Lutron Alisse keypads. Tap any keypad to change its button names or layout. <a href="#" id="helpLink" hidden onclick="return false">How this works</a></p>
+      <p class="sub" id="subline">Lutron keypads. Tap any keypad to change its button names or layout. <a href="#" id="helpLink" hidden onclick="return false">How this works</a></p>
     </div>
     <div class="actions">
       <button type="button" class="btnx" id="addBtn">+ Add keypad</button>
@@ -38,13 +38,13 @@
   <div id="banner"></div>
   <div id="builder"></div>
   <div class="bar" role="group" aria-label="Mockup options">
-    <div class="ctl"><span id="finLabel">Finish</span><div class="seg" id="finish"></div><div id="finNote" class="finnote"></div></div>
+    <div id="finBox" style="display:contents"></div>
     <div class="ctl"><span>Case</span><div class="seg" id="case"></div></div>
     <div class="ctl"><span>Text size</span><div class="seg" id="size"></div></div>
     <div class="ctl"><span>Floor</span><div class="seg" id="floorSel"></div></div>
   </div>
   <div id="out"></div>
-  <p class="note">Engraving is checked like Lutron's engraving tool (Helvetica, centered, 2 lines max). Names that are too wide show in red. Changes save in this browser until they're sent. This is a mockup for checking layout and wording; colors on screen are approximate.</p>
+  <p class="note">Engraving is checked like Lutron's engraving tool, 2 lines max. Alisse widths match Lutron's tool; Palladiom, seeTouch, Sunnata and Pico allow about 9 capital letters a line. Names that are too wide show in red. Changes save in this browser until they're sent. This is a mockup for checking layout and wording; colors on screen are approximate.</p>
   <p class="note"><button type="button" class="btnx" id="csvBtn">Download for Google Sheet (CSV)</button> <button type="button" class="btnx" id="printBtn">Print</button> <button type="button" class="btnx danger" id="resetBtn">Undo all my changes</button></p>
 </div>
 
@@ -55,7 +55,7 @@
     <label class="f">Keypad #<input id="edN" autocomplete="off"></label>
     <label class="f">Location<input id="edLoc" autocomplete="off"></label>
     <label class="f">Floor<input id="edFloor" list="floorList" autocomplete="off"></label>
-    <label class="f">Layout<select id="edLay"></select></label>
+    <label class="f">Keypad type<select id="edLay"></select></label>
     <label class="f full">Finish for this keypad<select id="edFin"></select></label>
   </div>
   <datalist id="floorList"></datalist>
@@ -88,6 +88,6 @@
   <div class="dfoot"><span></span><div class="r"><button type="submit" class="btnx primary">Got it</button></div></div>
 </form></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="app.js?v=20261117"></script>
+<script src="app.js?v=20261117b"></script>
 </body>
 </html>
