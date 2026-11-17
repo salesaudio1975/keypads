@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26A";   // shown at the bottom of every page; bump with each release
+const VERSION="11-17-26B";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -128,9 +128,9 @@ function render(){
   $("size").closest(".ctl").hidden=!groups().includes("alisse");
   $("out").innerHTML=fl.filter(f=>st.floor==="All"||f===st.floor).map(f=>{
     const ks=D.kp.map((k,i)=>[k,i]).filter(([k])=>(k.floor||"No floor")===f);
-    return `<section class="floor"><h2>${esc(/basement|floor|level|attic|roof|garage|cellar/i.test(f)?f:f+" floor")} · ${ks.length} keypad${ks.length===1?"":"s"}</h2><div class="grid">${ks.map(([k,i])=>{
+    return `<section class="floor"><h2>${esc(/basement|floor|level|attic|roof|garage|cellar/i.test(f)?f:f+" floor")} · ${ks.length} keypad${ks.length===1?"":"s"}${ks.some(([k])=>k.ok)?` · ${ks.filter(([k])=>k.ok).length} approved`:""}</h2><div class="grid">${ks.map(([k,i])=>{
       const p=plate(k),own=k.finish&&finOk(grpOf(k),k.finish);
-      return `<div class="kp" tabindex="0" role="button" data-i="${i}" aria-label="Edit keypad ${esc(k.n)}"><div class="wallbox ${wallCls(k)}">${p.html}</div><div class="cap"><b>Keypad ${esc(k.n)}<span class="tag">${esc(tagOf(k))}</span></b>${own?`<small class="own">${esc(finName(k.finish,grpOf(k))+codeOf(grpOf(k),k.finish))} (own finish)</small>`:""}<small>${esc(k.loc||"")}</small>${p.bad.length?`<span class="warn">Too long for Lutron: ${p.bad.map(esc).join(", ")}</span>`:""}<span class="edit">Tap to edit</span></div></div>`}).join("")}</div></section>`;
+      return `<div class="kp${k.ok?" ok":""}" tabindex="0" role="button" data-i="${i}" aria-label="${k.ok?"Keypad "+esc(k.n)+", approved":"Edit keypad "+esc(k.n)}"><button type="button" class="okb" data-ok="${i}" aria-pressed="${!!k.ok}" title="${k.ok?"Approved. Tap to unlock":"Approve and lock this keypad"}" aria-label="${k.ok?"Unlock keypad "+esc(k.n):"Approve keypad "+esc(k.n)}">✓</button><div class="wallbox ${wallCls(k)}">${p.html}</div><div class="cap"><b>Keypad ${esc(k.n)}<span class="tag">${esc(tagOf(k))}</span></b>${own?`<small class="own">${esc(finName(k.finish,grpOf(k))+codeOf(grpOf(k),k.finish))} (own finish)</small>`:""}<small>${esc(k.loc||"")}</small>${p.bad.length?`<span class="warn">Too long for Lutron: ${p.bad.map(esc).join(", ")}</span>`:""}${k.ok?`<span class="appr">✓ Approved</span>`:`<span class="edit">Tap to edit</span>`}</div></div>`}).join("")}</div></section>`;
   }).join("")||`<p class="hint">No keypads yet. Tap “+ Add keypad”${MODE==="builder"?", or paste them from the Google Sheet above":""}.</p>`;
 }
 function segItems(id,items,key){
@@ -211,14 +211,19 @@ let delArm=0;
 $("edDel").addEventListener("click",()=>{const b=$("edDel");
   if(Date.now()-delArm>4000){delArm=Date.now();b.textContent="Tap again to delete";setTimeout(()=>{b.textContent="Delete keypad"},4000);return}
   delArm=0;b.textContent="Delete keypad";const k=D.kp[cur];D.kp.splice(cur,1);ed.close();save();render();toast("Keypad "+k.n+" deleted")});
-$("edDup").addEventListener("click",()=>{const k=clone(D.kp[cur]);k.n=nextN();D.kp.splice(cur+1,0,k);save();render();openEd(cur+1);toast("Copied as keypad "+k.n)});
+$("edDup").addEventListener("click",()=>{const k=clone(D.kp[cur]);delete k.ok;k.n=nextN();D.kp.splice(cur+1,0,k);save();render();openEd(cur+1);toast("Copied as keypad "+k.n)});
 ed.addEventListener("close",()=>{cur=-1;delArm=0;$("edDel").textContent="Delete keypad"});
 function nextN(){const ns=D.kp.map(k=>parseInt(k.n,10)).filter(n=>!isNaN(n));return String((ns.length?Math.max(...ns):0)+1)}
 $("addBtn").addEventListener("click",()=>{const fl=st.floor!=="All"?st.floor:(D.kp.length?D.kp[D.kp.length-1].floor:"First");
   const last=D.kp[D.kp.length-1],nk={n:nextN(),floor:fl,loc:"",cols:[3],labels:["","",""]};if(last&&last.type)setType(nk,last.type);
   D.kp.push(nk);save();render();openEd(D.kp.length-1)});
-$("out").addEventListener("click",e=>{const k=e.target.closest(".kp");if(k)openEd(+k.dataset.i)});
-$("out").addEventListener("keydown",e=>{const k=e.target.closest(".kp");if(k&&(e.key==="Enter"||e.key===" ")){e.preventDefault();openEd(+k.dataset.i)}});
+function toggleOk(i){const k=D.kp[i];
+  if(!k.ok){const bad=k.labels.filter(l=>tooLong(l,k));if(bad.length){toast("Shorten "+bad.join(", ")+" before approving keypad "+k.n);return}k.ok=1;save();render();toast("Keypad "+k.n+" approved and locked")}
+  else{delete k.ok;save();render();toast("Keypad "+k.n+" unlocked. You can edit it again")}
+  const b=document.querySelector(`.okb[data-ok="${i}"]`);if(b)b.focus()}
+function tapKp(i){if(D.kp[i].ok){toast("Keypad "+D.kp[i].n+" is approved. Tap its check mark to unlock it.");return}openEd(i)}
+$("out").addEventListener("click",e=>{const o=e.target.closest(".okb");if(o){e.stopPropagation();toggleOk(+o.dataset.ok);return}const k=e.target.closest(".kp");if(k)tapKp(+k.dataset.i)});
+$("out").addEventListener("keydown",e=>{if(e.target.closest(".okb"))return;const k=e.target.closest(".kp");if(k&&(e.key==="Enter"||e.key===" ")){e.preventDefault();tapKp(+k.dataset.i)}});
 
 // ---------- layouts and importing from the Google Sheet ----------
 function parseLayout(s){const c=String(s||"").split(/[+,]/).map(x=>parseInt(x,10)).filter(n=>n>=1&&n<=3);return c.length&&c.length<=3?c:null}
@@ -239,7 +244,7 @@ function parseTable(text){
     let cols=ty?ty[4].slice():parseLayout(String(r[3]||"").replace(/^alisse\s*/i,""));if(!cols)cols=guessLayout(labels.length);
     const n=cols.reduce((a,b)=>a+b,0);const lb=labels.slice(0,n);while(lb.length<n)lb.push("");
     const k={n:r[0]||String(kp.length+1),floor:r[1]||"First",loc:r[2]||"",cols,labels:lb};if(ty)k.type=ty[0];
-    const fm=findFin(grpOf(k),r[13]);if(fm)k.finish=fm;
+    const fm=findFin(grpOf(k),r[13]);if(fm)k.finish=fm;if(/^(yes|y|x|✓|approved|true)$/i.test(r[14]||""))k.ok=1;
     kp.push(k);
   }
   return kp;
@@ -332,7 +337,8 @@ $("sendBtn").addEventListener("click",async()=>{
   const subj=(D.title||"Project")+" keypad changes";
   const gs=groups(),fn=gs.map(g=>(gs.length>1?FAMS[g].n+" ":"")+finName(projFin(g),g)).join(", ");
   const own=D.kp.filter(k=>k.finish&&finOk(grpOf(k),k.finish)).map(k=>"Keypad "+k.n+": "+finName(k.finish,grpOf(k)));
-  const body="Here are my keypad changes (finish: "+fn+(own.length?"; different finish on "+own.join(", "):"")+"). Open this link and use the same email as before:\n\n"+url+"\n";
+  const ok=D.kp.filter(k=>k.ok).map(k=>k.n),okTxt=ok.length===D.kp.length?"All "+ok.length+" keypads approved. ":ok.length?"Approved: keypad"+(ok.length>1?"s ":" ")+ok.join(", ")+" ("+ok.length+" of "+D.kp.length+"). ":"";
+  const body=okTxt+"Here are my keypad changes (finish: "+fn+(own.length?"; different finish on "+own.join(", "):"")+"). Open this link and use the same email as before:\n\n"+url+"\n";
   $("sdMail").href="mailto:"+encodeURIComponent(D.replyTo||"")+"?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body);
   $("sdCopy").onclick=()=>copy(url);
 });
@@ -341,8 +347,8 @@ async function copy(t){try{await navigator.clipboard.writeText(t);toast("Link co
 // ---------- CSV, print, reset ----------
 $("csvBtn").addEventListener("click",()=>{
   const q=v=>/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':String(v);
-  const rows=[["Keypad","Floor","Location","Layout",...Array.from({length:9},(_,i)=>"Button "+(i+1)),"Finish (if different)"]];
-  D.kp.forEach(k=>rows.push([k.n,k.floor,k.loc,typeOf(k)?typeOf(k)[2]:layName(k.cols),...Array.from({length:9},(_,i)=>k.labels[i]||""),k.finish&&finOk(grpOf(k),k.finish)?finName(k.finish,grpOf(k)):""]));
+  const rows=[["Keypad","Floor","Location","Layout",...Array.from({length:9},(_,i)=>"Button "+(i+1)),"Finish (if different)","Approved"]];
+  D.kp.forEach(k=>rows.push([k.n,k.floor,k.loc,typeOf(k)?typeOf(k)[2]:layName(k.cols),...Array.from({length:9},(_,i)=>k.labels[i]||""),k.finish&&finOk(grpOf(k),k.finish)?finName(k.finish,grpOf(k)):"",k.ok?"Yes":""]));
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([rows.map(r=>r.map(q).join(",")).join("\r\n")],{type:"text/csv"}));
   a.download=(D.title||"keypads").replace(/[^\w -]/g,"")+" keypads.csv";document.body.appendChild(a);a.click();a.remove();
 });

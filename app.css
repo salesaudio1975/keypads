@@ -118,9 +118,9 @@ textarea.paste{font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;color:var(--f
 .steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px;line-height:1.5}
 #helpLink{color:var(--accent);font-weight:600;white-space:nowrap}
 .cap small.own{color:var(--accent);font-weight:600}
-/* Other Lutron families: drawn to scale with Alisse (--pw = 3.55 in), styled after Lutron's engraving report pictures */
-.plate.fam{aspect-ratio:auto;border-radius:3px;--pw:calc(176px*var(--z,1))}
-@media (max-width:440px){.plate.fam{--pw:calc(140px*var(--z,1))}}
+/* Other Lutron families: all drawn at the same scale as Alisse (--pw = 3.55 in), styled after Lutron's engraving report pictures */
+.plate.fam{aspect-ratio:auto;border-radius:3px;--pw:176px}
+@media (max-width:440px){.plate.fam{--pw:140px}}
 .fam .keys{position:absolute;display:flex;gap:var(--gap);box-sizing:border-box}
 .fam .kcol{flex:1;display:flex;flex-direction:column;gap:var(--gap);min-width:0}
 .fam .key{flex:1;min-height:0;position:relative;display:flex;align-items:flex-start;box-sizing:border-box;overflow:hidden;background:var(--kc);padding:4% 7%}
@@ -169,3 +169,17 @@ textarea.paste{font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;color:var(--f
 .fam.see .ir{display:flex;align-items:center;justify-content:center}
 .fam.see .ir i{display:block;width:45%;height:28%;border-radius:2px;background:#2b2222;opacity:.85}
 .ver{text-align:center;font-size:11px;color:var(--muted);margin:8px 0 18px;letter-spacing:.04em}@media print{.ver{display:none}}
+/* approve check mark: locks a keypad */
+:root{--okc:#2e7d4f}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--okc:#5fbf86}}
+:root[data-theme="dark"]{--okc:#5fbf86}
+.kp{position:relative}
+.okb{position:absolute;top:6px;right:6px;z-index:2;width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--line);font-size:16px;font-weight:700;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.okb:hover{border-color:var(--okc);color:var(--okc)}
+.okb:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.okb[aria-pressed="true"]{background:var(--okc);border-color:var(--okc);color:#fff}
+.kp.ok{cursor:default}
+.kp.ok .wallbox{box-shadow:0 0 0 2px var(--okc)}
+.kp.ok:hover .wallbox{box-shadow:0 0 0 2px var(--okc)}
+.kp .appr{font-size:11px;color:var(--okc);font-weight:700;margin-top:2px;display:block}
+@media print{.okb{display:none}.kp.ok .wallbox{box-shadow:none}}
