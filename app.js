@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26Q";   // shown at the bottom of every page; bump with each release
+const VERSION="11-17-26R";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -198,7 +198,7 @@ function fillFin(){const k=D.kp[cur],g=grpOf(k);
   $("edFin").innerHTML=`<option value="">Same as project (${esc(finName(projFin(g),g))})</option>`+finList(g).map(([v,l])=>`<option value="${v}">${esc(l+codeOf(g,v))}</option>`).join("");
   $("edFin").value=k.finish&&finOk(g,k.finish)?k.finish:""}
 const COLNAME={1:["Buttons (top to bottom)"],2:["Left column (top to bottom)","Right column (top to bottom)"],3:["Left column","Middle column","Right column"]};
-function openEd(i){cur=i;const k=D.kp[i];edSnap=clone(k);edKeep=false;ed.returnValue="";
+function openEd(i){cur=i;edFocus=-1;const k=D.kp[i];edSnap=clone(k);edKeep=false;ed.returnValue="";
   $("edTitle").textContent="Keypad "+k.n;$("edN").value=k.n;$("edLoc").value=k.loc||"";$("edFloor").value=k.floor||"";
   $("floorList").innerHTML=floors().map(f=>`<option value="${esc(f)}">`).join("");
   const sel=$("edLay"),ln=typeOf(k)?k.type:"a:"+layName(k.cols);
@@ -206,9 +206,10 @@ function openEd(i){cur=i;const k=D.kp[i];edSnap=clone(k);edKeep=false;ed.returnV
   sel.value=ln;fillFin();buildInputs();edPreview();$("edMore").open=!matchMedia("(max-width:600px)").matches||isOpen("edmore");
   if(ed.showModal)ed.showModal();else ed.setAttribute("open","");
 }
+document.addEventListener("focusin",e=>{if(e.target.matches&&e.target.matches("#edCols input")){edFocus=+e.target.dataset.b;edMark()}});
 function buildInputs(){const k=D.kp[cur],t=typeOf(k);let idx=0;const nc=k.cols.length;
   $("edCols").innerHTML=k.cols.map((cnt,ci)=>{let h=`<div><p class="colh">${(COLNAME[nc]||[])[ci]||"Column "+(ci+1)}</p>`;
-    for(let i=0;i<cnt;i++,idx++)h+=`<div class="bl"><input data-b="${idx}" value="${esc(k.labels[idx]||"")}" placeholder="Button ${idx+1} name (blank = no engraving)" autocomplete="off" aria-label="Button ${idx+1} name"><small data-m="${idx}"></small></div>`;
+    for(let i=0;i<cnt;i++,idx++)h+=`<div class="bl"><span class="bn" aria-hidden="true">${idx+1}</span><input data-b="${idx}" value="${esc(k.labels[idx]||"")}" placeholder="Button ${idx+1} name (blank = no engraving)" autocomplete="off" aria-label="Button ${idx+1} name"><small data-m="${idx}"></small></div>`;
     return h+"</div>"}).join("")+(t&&t[5]?`<p class="small">Plus raise/lower buttons at the bottom (not engraved).</p>`:"");
   checkInputs();
 }
@@ -219,9 +220,13 @@ function checkInputs(){const k=D.kp[cur];
     m.textContent=ln?(ln.length===2?"Fits on 2 lines: "+ln.join(" / "):"Fits on 1 line"):typeOf(k)?"Too long (about 9 capital letters a line, 2 lines max). Shorten it or add a space to split it.":"Too long for Lutron's engraving (2 lines max). Shorten it or add a space to split it.";
   });
 }
+let edFocus=-1;
 function edPreview(){const k=D.kp[cur],g=grpOf(k),t=typeOf(k);$("edPv").className="pv "+wallCls(k);$("edPv").innerHTML=plate(k).html;
-  $("edMain").classList.toggle("multi",k.cols.length>1);$("edMain").style.setProperty("--nc",k.cols.length);
-  $("edMoreSum").textContent=[k.loc||"No location",k.floor?(/basement|floor|level|attic|roof|garage|cellar|apartment|apt\b|unit|suite|penthouse|residence|building|wing|house/i.test(k.floor)?k.floor:k.floor+" floor"):"",t?t[2]:"Alisse "+k.cols.reduce((a,b)=>a+b,0)+"-button",finName(kFin(k),g)].filter(Boolean).join(" · ")}
+  const rows=Math.max(...k.cols);$("edPv").style.setProperty("--epw",rows<=4?"150px":rows<=6?"124px":"104px");
+  $("edMain").classList.toggle("multi",k.cols.length>1);$("edMain").style.setProperty("--nc",k.cols.length);edMark();
+  const fl=k.floor?(/basement|floor|level|attic|roof|garage|cellar|apartment|apt\b|unit|suite|penthouse|residence|building|wing|house/i.test(k.floor)?k.floor:k.floor+" floor"):"";
+  $("edMoreSum").innerHTML=[[k.loc||"Add a location",fl].filter(Boolean).join(" · "),t?t[2]:"Alisse "+k.cols.reduce((a,b)=>a+b,0)+"-button",finName(kFin(k),g)].map(x=>`<span class="chip">${esc(x)}<i aria-hidden="true">✎</i></span>`).join("")}
+function edMark(){const ks=$("edPv").querySelectorAll(".key:not(.rl),.cell");ks.forEach((e,i)=>e.classList.toggle("cur",i===edFocus))}
 function changed(){save();render();if(cur>=0)edPreview()}
 $("edCols").addEventListener("input",e=>{const i=e.target.dataset.b;if(i===undefined)return;D.kp[cur].labels[+i]=e.target.value;checkInputs();changed()});
 $("edN").addEventListener("input",e=>{D.kp[cur].n=e.target.value;$("edTitle").textContent="Keypad "+e.target.value;changed()});
