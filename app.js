@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26K";   // shown at the bottom of every page; bump with each release
+const VERSION="11-17-26L";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -408,11 +408,12 @@ $("csvBtn").addEventListener("click",()=>{
 });
 $("printBtn").addEventListener("click",()=>window.print());
 let resetArm=0;$("resetBtn").addEventListener("click",e=>{const b=e.currentTarget;
-  if(Date.now()-resetArm>4000){resetArm=Date.now();b.textContent="Tap again to undo everything";setTimeout(()=>b.textContent="Undo all my changes",4000);return}
-  resetArm=0;b.textContent="Undo all my changes";
+  const lab=MODE==="builder"?"Start new project":"Undo all my changes";
+  if(Date.now()-resetArm>4000){resetArm=Date.now();b.textContent=MODE==="builder"?"Tap again to clear this project":"Tap again to undo everything";setTimeout(()=>b.textContent=lab,4000);return}
+  resetArm=0;b.textContent=lab;
   if(MODE==="builder"){D={id:"",title:"",replyTo:"",rev:0,kp:[]};B.client="";B.reply="";ls.del("kpBuilder");builderFill()}
   else{D=clone(ORIG.d);Object.assign(st,ORIG.st);PF=ORIG.pf;PFX={...ORIG.pfx};st.finish=PF;st.fx={...PFX};ls.del("kp:"+D.id)}
-  initBar();render();toast(MODE==="builder"?"Started over":"Back to the version in the link")});
+  initBar();render();toast(MODE==="builder"?"New project started. Add a name, the client's email and the keypads.":"Back to the version in the link")});
 let tt;function toast(m,bad){const t=$("toast");t.textContent=(bad?"⚠ ":"")+m;t.classList.toggle("bad",!!bad);t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),Math.max(1400,m.length*45))}
 
 // ---------- client start: unlock with email ----------
@@ -462,9 +463,15 @@ function builderFill(){
 function startBuilder(){
   const s=ls.get("kpBuilder");
   if(s&&s.d&&validKp(s.d.kp)){D=s.d;Object.assign(st,s.st||{});Object.assign(B,s.b||{})}
-  $("sendBtn").hidden=true;$("resetBtn").textContent="Undo all my changes";
+  $("sendBtn").hidden=true;$("resetBtn").textContent="Start new project";
   $("builder").innerHTML=$("builderTpl").innerHTML;
   builderFill();
+  let newArm=0;$("bNew").addEventListener("click",()=>{const b=$("bNew");
+    if(!D.kp.length&&!D.title.trim()){$("bTitle").focus();return}
+    if(Date.now()-newArm>4000){newArm=Date.now();b.textContent="Tap again to clear "+(D.title.trim()||"this project");b.classList.add("danger");setTimeout(()=>{b.textContent="+ Start new project";b.classList.remove("danger")},4000);return}
+    newArm=0;b.textContent="+ Start new project";b.classList.remove("danger");
+    D={id:"",title:"",replyTo:"",rev:0,kp:[]};B.client="";ls.del("kpBuilder");builderFill();$("bPaste").value="";initBar();render();$("bTitle").focus();
+    toast("New project started. Add a name, the client's email and the keypads.")});
   $("bTitle").addEventListener("input",e=>{D.title=e.target.value;save();render()});
   $("bClient").addEventListener("input",e=>{B.client=e.target.value.trim();save()});
   $("bImport").addEventListener("click",()=>{const kp=parseTable($("bPaste").value);
