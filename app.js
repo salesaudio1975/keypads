@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26L";   // shown at the bottom of every page; bump with each release
+const VERSION="11-17-26M";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -63,7 +63,7 @@ const finOk=(g,v)=>finList(g).some(f=>f[0]===v);
 const kFin=k=>{const g=grpOf(k);return k&&k.finish&&finOk(g,k.finish)?k.finish:curFin(g)};
 function save(){
   if(MODE==="builder"){ls.set("kpBuilder",{d:D,st:pickSt(),b:B});const o=$("bOut");if(o)o.hidden=true}
-  else if(D.id)ls.set("kp:"+D.id,{d:D,st:pickSt(),rev:D.rev,pf:PF,pfx:PFX});
+  else if(D.id){ls.set("kp:"+D.id,{d:D,st:pickSt(),rev:D.rev,pf:PF,pfx:PFX});if(LIVE)track("edit")}
 }
 const pickSt=()=>({finish:st.finish,fx:{...st.fx},case:st.case,size:st.size});
 
@@ -121,7 +121,7 @@ const tagOf=k=>{const t=typeOf(k),nb=k.cols.reduce((a,b)=>a+b,0);return (t?FAMS[
 const groups=()=>{const s=new Set(D.kp.map(grpOf));if(!s.size)s.add("alisse");return GROUPS.filter(g=>s.has(g))};
 function render(){
   const name=D.title||(MODE==="builder"?"New project":"Your");
-  $("title").textContent=name+" keypads";document.title=name+" keypads";
+  if(!document.body.classList.contains("plv")){$("title").textContent=name+" keypads";document.title=name+" keypads"}
   const fl=floors();if(st.floor!=="All"&&!fl.includes(st.floor))st.floor="All";
   segItems("floorSel",["All",...fl].map(f=>[f,f]),"floor");
   const gs=groups().join();if(gs!==finBar.last)finBar();
@@ -374,6 +374,17 @@ async function makeLink(email){return siteBase()+"#e="+await seal({v:1,id:D.id,t
 // ---------- send changes (client) ----------
 const sd=$("sd");
 const SALES="sales@audio1975.com";   // every email from the site goes here
+// ---------- shared "Keypad projects" Google Sheet (Apps Script web app) ----------
+const KP_API="";   // the web app's /exec URL; empty = list turned off
+let LIVE=false,trackT=0;
+async function api(o){const r=await fetch(KP_API,{method:"POST",body:JSON.stringify(o),keepalive:JSON.stringify(o).length<60000});return r.json()}
+const okCount=()=>D.kp.filter(k=>k.ok).length+" of "+D.kp.length;
+// client page: tell the list what's happening; "edit" waits until they pause
+function track(ev){if(!KP_API||MODE!=="client"||!D.id||!EMAIL)return;clearTimeout(trackT);
+  const go=async()=>{try{const all=D.kp.length&&D.kp.every(k=>k.ok);
+    const status=ev==="open"?"":ev==="send"?(all?"Approved, emailed":"Changes emailed"):(all?"Approved":"Client editing");
+    await api({a:"client",id:D.id,ev,status,approved:okCount(),link:ev==="open"?"":await makeLink(EMAIL)})}catch(e){}};
+  if(ev==="edit")trackT=setTimeout(go,6000);else go()}
 async function openSend(approved){
   $("sdTitle").textContent=approved?"All keypads approved":"Send your changes";
   $("sdText").textContent=approved?"Thank you! Every keypad is approved. Tap below to email your approval to Audio Breakthroughs, so we can order the engraving.":"This makes a link that opens the keypads exactly as you have them now. It opens with the same email as before.";
@@ -392,6 +403,7 @@ async function openSend(approved){
     :okTxt+"Here are my keypad changes (finish: "+fn+(own.length?"; different finish on "+own.join(", "):"")+"). Open this link and use the same email as before:\n\n"+url+"\n")+(EMAIL?"\nFrom: "+EMAIL+"\n":"");
   $("sdMail").href="mailto:"+SALES+"?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body);
   $("sdCopy").onclick=()=>copy(url);
+  $("sdMail").onclick=()=>track("send");
 }
 $("sendBtn").addEventListener("click",()=>openSend(false));
 // the moment every keypad is approved, offer the approval email (client only)
@@ -439,6 +451,7 @@ function useProject(p,email){
   $("gate").hidden=true;$("app").hidden=false;initBar();render();
   $("helpLink").hidden=false;$("helpLink").onclick=showHelp;
   if(!ls.get("kp:helpSeen"))showHelp();
+  LIVE=true;track("open");
 }
 function showHelp(){const h=$("help");if(h.showModal)h.showModal();else h.setAttribute("open","");ls.set("kp:helpSeen",1)}
 async function startClient(){
@@ -457,6 +470,69 @@ async function startClient(){
 window.addEventListener("hashchange",()=>{if(MODE==="client")location.reload()});
 
 // ---------- builder (new.html) ----------
+function clearProject(){D={id:"",title:"",replyTo:"",rev:0,kp:[]};B.client="";ls.del("kpBuilder");builderFill();$("bPaste").value="";initBar();render();setView("edit");$("bTitle").focus();
+  toast("New project started. Add a name, the client's email and the keypads.")}
+// ---- all projects (reads the shared Google Sheet) ----
+let ROWS=null,openArm="",rmArm="";
+const teamKey=()=>{const c=$("kpCfg");return c?c.dataset.key:""};
+const linkTok=u=>{const m=String(u||"").match(/#e=([A-Za-z0-9_-]+)/);return m?m[1]:""};
+function summary(kp,s0){const set=new Set(kp.map(grpOf)),gs=GROUPS.filter(g=>set.has(g));if(!gs.length)gs.push("alisse");
+  const fin=g=>g==="alisse"?(s0.finish||"nickel"):fixFx(s0.fx)[g];
+  return {keypads:kp.length,types:gs.map(g=>FAMS[g].n).join(", "),finish:gs.map(g=>(gs.length>1?FAMS[g].n+" ":"")+finName(fin(g),g)).join(", "),approved:kp.some(k=>k.ok)?kp.filter(k=>k.ok).length+" of "+kp.length:""}}
+async function listSave(url,email,status,p){if(!KP_API)return false;p=p||{id:D.id,title:D.title,kp:D.kp,st:pickSt()};
+  try{const r=await api({a:"save",key:teamKey(),site:siteBase(),id:p.id,title:p.title,client:normEmail(email),status,link:url,...summary(p.kp,p.st||{})});if(!r.ok)throw 0;
+    ROWS=null;toast("Saved to the projects list");return true}
+  catch(e){toast("Couldn't save to the projects list. Check the internet connection and try again.",1);return false}}
+async function loadRows(){if(!KP_API)return;$("pMsg").textContent="Loading projects…";
+  try{const r=await api({a:"list",key:teamKey()});if(!r.ok)throw 0;ROWS=r.rows;$("pMsg").textContent="";drawRows()}
+  catch(e){$("pMsg").textContent="Couldn't load the projects list. Check the internet connection, then tap Refresh."}}
+const when=iso=>{if(!iso)return"";const d=new Date(iso);return isNaN(d)?"":d.toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})};
+const stCls=t=>/^approved/i.test(t)?"ok":/link sent/i.test(t)?"draft":"wait";
+function drawRows(){if(!ROWS)return;const q=$("pSearch").value.trim().toLowerCase();
+  const rs=ROWS.filter(r=>!q||[r.title,r.client,r.status,r.types,r.finish].join(" ").toLowerCase().includes(q)).sort((a,b)=>String(b.last).localeCompare(String(a.last)));
+  $("pRows").innerHTML=!ROWS.length?`<p class="hint">No projects yet. Each client link you make is added here, or tap “Add an existing link”.</p>`:!rs.length?`<p class="hint">No projects match “${esc(q)}”.</p>`:
+  `<table class="ptab"><thead><tr><th>Project</th><th class="hs">Keypads</th><th>Status</th><th class="hs">Last activity</th><th></th></tr></thead><tbody>${rs.map(r=>`<tr data-id="${esc(r.id)}"><td class="pn"><b>${esc(r.title||"Untitled")}</b><small>${esc(r.client)}</small></td><td class="hs">${esc(r.keypads)}<small>${esc(r.types)}${r.finish?" · "+esc(r.finish):""}</small></td><td><span class="pst ${stCls(r.status)}">${esc(r.status||"Link sent")}</span>${r.approved?`<small>${esc(r.approved)} approved</small>`:""}</td><td class="hs">${esc(when(r.last))}</td><td><div class="pact"><button type="button" class="btnx primary" data-act="open">Open</button><button type="button" class="btnx" data-act="copy">Copy link</button><button type="button" class="btnx danger" data-act="rm" aria-label="Remove from list">${rmArm===r.id?"Tap to remove":"Remove"}</button></div></td></tr>`).join("")}</tbody></table>`}
+function loadIntoBuilder(p,email,id){const s0=p.st||{};
+  D={id:p.id||id||"",title:p.title||"",replyTo:SALES,rev:p.rev||0,kp:p.kp};
+  st.finish=s0.finish||"nickel";st.fx=fixFx(s0.fx);if(s0.case)st.case=s0.case;if(s0.size)st.size=s0.size;st.floor="All";fix();
+  B.client=normEmail(email);save();builderFill();$("bPaste").value="";initBar();setView("edit");window.scrollTo(0,0)}
+async function openRow(r){
+  const unsaved=D.kp.length&&D.id!==r.id&&!(ROWS||[]).some(x=>x.id===D.id);
+  if(unsaved&&openArm!==r.id){openArm=r.id;toast("“"+(D.title||"The project you're editing")+"” isn't in the list yet, so opening another one replaces it. Tap Open again to go ahead.",1);setTimeout(()=>{if(openArm===r.id)openArm=""},6000);return}
+  openArm="";let p=null,latest=false;
+  for(const u of [r.clink,r.link]){const t=linkTok(u);if(t&&(p=await tryOpen(t,r.client))){latest=u===r.clink;break}}
+  if(!p){toast("Couldn't open this project with "+r.client+".",1);return}
+  loadIntoBuilder(p,r.client,r.id);toast("Opened "+(p.title||"the project")+(latest?", with the client's latest changes":""))}
+function setView(v){if(!$("vtabs"))return;const list=v==="list"&&!!KP_API;document.body.classList.toggle("plv",list);
+  $("vtabs").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===(list?"list":"edit")));
+  if(list){$("title").textContent="Keypad projects";document.title="Keypad projects";if(!ROWS)loadRows();else drawRows()}else render()}
+function initList(){const hasApi=!!KP_API;$("vtabs").hidden=!hasApi;if(!hasApi)return;
+  $("vtabs").addEventListener("click",e=>{const b=e.target.closest("button");if(b)setView(b.dataset.v)});
+  $("pSearch").addEventListener("input",drawRows);
+  $("pRefresh").addEventListener("click",loadRows);
+  $("pNew").addEventListener("click",()=>{if(!D.kp.length&&!D.title.trim()||(ROWS||[]).some(x=>x.id===D.id)){clearProject();return}setView("edit");$("bNew").click();$("bNew").scrollIntoView({block:"center"})});
+  $("pAddLink").addEventListener("click",()=>{$("pAddForm").hidden=false;$("pAddErr").textContent="";$("pAddUrl").focus()});
+  $("pAddCancel").addEventListener("click",()=>{$("pAddForm").hidden=true});
+  $("pAddForm").addEventListener("submit",async e=>{e.preventDefault();const u=$("pAddUrl").value.trim(),em=$("pAddEmail").value.trim(),t=linkTok(u);
+    if(!t){$("pAddErr").textContent="That doesn't look like a keypads link. It should have #e= in it.";return}
+    if(!/^\S+@\S+\.\S+$/.test(em)){$("pAddErr").textContent="Add the client's email.";return}
+    $("pAddErr").textContent="Opening…";const p=await tryOpen(t,em);
+    if(!p){$("pAddErr").textContent="That email doesn't open this link. Use the email the link was sent to.";return}
+    if(!p.id)p.id=crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(36).slice(2);
+    const known=(ROWS||[]).find(x=>x.id===p.id);
+    $("pAddErr").textContent="Saving…";
+    if(await listSave(siteBase()+"#e="+t,em,known?known.status:(p.kp.length&&p.kp.every(k=>k.ok)?"Approved":"Link sent"),p)){$("pAddForm").hidden=true;$("pAddUrl").value="";$("pAddEmail").value="";$("pAddErr").textContent="";loadRows()}
+    else $("pAddErr").textContent="Couldn't save it. Check the internet connection and try again."});
+  $("pRows").addEventListener("click",async e=>{const b=e.target.closest("button[data-act]");if(!b)return;const tr=b.closest("tr"),r=(ROWS||[]).find(x=>x.id===tr.dataset.id);if(!r)return;
+    if(b.dataset.act==="open")openRow(r);
+    else if(b.dataset.act==="copy")copy(r.clink||r.link);
+    else if(b.dataset.act==="rm"){if(rmArm!==r.id){rmArm=r.id;drawRows();setTimeout(()=>{if(rmArm===r.id){rmArm="";drawRows()}},4000);return}
+      rmArm="";try{const x=await api({a:"delete",key:teamKey(),id:r.id});if(!x.ok)throw 0;ROWS=ROWS.filter(y=>y.id!==r.id);drawRows();toast("Removed “"+(r.title||"project")+"” from the list. The client's link still works.")}
+      catch(err){toast("Couldn't remove it. Try again.",1)}}});
+  $("pSignOut").addEventListener("click",()=>{try{localStorage.removeItem("kpTeamPass")}catch(e){}location.reload()});
+  const m=location.hash.match(/^#open=([\w-]+)$/);
+  if(m){history.replaceState(null,"",location.pathname);setView("list");(async()=>{await loadRows();const r=(ROWS||[]).find(x=>x.id===m[1]);if(r)openRow(r);else toast("That project isn't in the list any more.",1)})()}
+  else setView("list")}
 function builderFill(){
   $("bTitle").value=D.title;$("bClient").value=B.client;$("bOut").hidden=true;
 }
@@ -469,9 +545,7 @@ function startBuilder(){
   let newArm=0;$("bNew").addEventListener("click",()=>{const b=$("bNew");
     if(!D.kp.length&&!D.title.trim()){$("bTitle").focus();return}
     if(Date.now()-newArm>4000){newArm=Date.now();b.textContent="Tap again to clear "+(D.title.trim()||"this project");b.classList.add("danger");setTimeout(()=>{b.textContent="+ Start new project";b.classList.remove("danger")},4000);return}
-    newArm=0;b.textContent="+ Start new project";b.classList.remove("danger");
-    D={id:"",title:"",replyTo:"",rev:0,kp:[]};B.client="";ls.del("kpBuilder");builderFill();$("bPaste").value="";initBar();render();$("bTitle").focus();
-    toast("New project started. Add a name, the client's email and the keypads.")});
+    newArm=0;b.textContent="+ Start new project";b.classList.remove("danger");clearProject()});
   $("bTitle").addEventListener("input",e=>{D.title=e.target.value;save();render()});
   $("bClient").addEventListener("input",e=>{B.client=e.target.value.trim();save()});
   $("bImport").addEventListener("click",()=>{const kp=parseTable($("bPaste").value);
@@ -501,8 +575,9 @@ function startBuilder(){
     const body=`Here are your keypads for ${D.title}. Open the link, enter this email address (${B.client}), and tap any keypad to change the button names. When you're done, tap "Send changes".\n\n${url}\n`;
     $("bMail").href="mailto:"+encodeURIComponent(B.client)+"?subject="+encodeURIComponent(D.title+" keypads")+"&body="+encodeURIComponent(body);
     $("bOpen").href=url;
+    listSave(url,B.client,"Link sent");
   });
-  $("app").hidden=false;initBar();render();
+  $("app").hidden=false;initBar();render();initList();
 }
 
 document.body.insertAdjacentHTML("beforeend",`<p class="ver">Version ${VERSION}</p>`);
