@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26P";   // shown at the bottom of every page; bump with each release
+const VERSION="11-17-26Q";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -136,6 +136,7 @@ function render(){
       const lp=String(k.loc||"").split("·").map(x=>x.trim()).filter(Boolean),room=lp[0]||"No location yet",spot=lp.slice(1).join(" · ")||(f==="No floor"?"":/basement|floor|level|attic|roof|garage|cellar|apartment|apt\b|unit|suite|penthouse|residence|building|wing|house/i.test(f)?f:f+" floor");
       return `<div class="kp card${k.ok?" ok":""}${p.bad.length?" toolong":""}" tabindex="0" role="button" data-i="${i}" aria-label="${k.ok?"Keypad "+esc(k.n)+", "+esc(room)+", approved":"Edit keypad "+esc(k.n)+", "+esc(room)}"><div class="khead"><span class="num${String(k.n).length>3?" long":""}">${esc(k.n)}</span><div class="kt"><b class="room">${esc(room)}</b>${spot?`<span class="spot">${esc(spot)}</span>`:""}</div><button type="button" class="okb" data-ok="${i}" aria-pressed="${!!k.ok}" title="${k.ok?"Approved. Tap to unlock":"Approve and lock this keypad"}" aria-label="${k.ok?"Unlock keypad "+esc(k.n):"Approve keypad "+esc(k.n)}">✓</button></div>${p.bad.length?`<div class="strip">⚠ Name${p.bad.length>1?"s":""} too long: <b>${p.bad.map(x=>esc(x.trim())).join(", ")}</b><span>Tap to fix</span></div>`:""}<div class="wallbox ${wallCls(k)}">${p.html}</div><div class="cap">${(()=>{const g=grpOf(k),v=kFin(k),fc=(finList(g).find(x=>x[0]===v)||[0,v,"#ccc"])[2];return `<small class="fin${own?" own":""}"><i class="sw" style="background:${fc}"></i>${esc(finName(v,g)+codeOf(g,v))}${own?" (own finish)":MODE==="client"&&v!==projFin(g)?" (previewing)":""}</small>`})()}<div class="kfoot"><span class="tag">${esc(tagOf(k))}</span>${k.ok?`<span class="appr">✓ Approved</span>`:`<span class="edit">${p.bad.length?"Tap to fix":"Tap to edit"}</span>`}</div></div></div>`}).join("")}</div></section>`;
   }).join("")||`<p class="hint">No keypads yet. Tap “+ Add keypad”${MODE==="builder"?", or paste them from the Google Sheet above":""}.</p>`;
+  updSum();
 }
 function segItems(id,items,key,obj=st,after){
   const el=$(id);
@@ -148,8 +149,16 @@ function finBar(){
   const gs=groups(),multi=gs.length>1;finBar.last=gs.join();
   $("finBox").innerHTML=gs.map(g=>{const sx=g==="alisse"?"":"-"+g,cur=curFin(g),pj=projFin(g);
     const lab=multi?FAMS[g].n+" finish":MODE==="builder"?"Project finish":"Finish";
-    return `<div class="ctl"><span id="finLabel${sx}">${esc(lab)}</span><div class="seg finseg" id="finish${sx}" data-g="${g}">${finList(g).map(([v,l,c])=>`<button type="button" data-v="${v}" aria-pressed="${v===cur}"><i class="sw" style="background:${c}"></i>${esc(l+codeOf(g,v))}${MODE==="client"&&v===pj?" ★":""}</button>`).join("")}</div><div id="finNote${sx}" class="finnote">${finNote(g,sx)}</div></div>`}).join("");
+    return `<details class="ctl" data-k="fin${sx}"${isOpen("fin"+sx)?" open":""}><summary><span id="finLabel${sx}">${esc(lab)}</span><b class="cv">${esc(finName(cur,g))}${MODE==="client"&&cur===pj?" ★":""}</b></summary><div class="seg finseg" id="finish${sx}" data-g="${g}">${finList(g).map(([v,l,c])=>`<button type="button" data-v="${v}" aria-pressed="${v===cur}"><i class="sw" style="background:${c}"></i>${esc(l+codeOf(g,v))}${MODE==="client"&&v===pj?" ★":""}</button>`).join("")}</div><div id="finNote${sx}" class="finnote">${finNote(g,sx)}</div></details>`}).join("");updSum();
 }
+// settings panel: closed by default; each part remembers if it was left open on this device
+const DELH='Delete<span class="hs"> keypad</span>';
+const isOpen=k=>(ls.get("kp:open")||[]).includes(k);
+document.addEventListener("toggle",e=>{const d=e.target;if(!d.matches||!d.matches("details[data-k]"))return;const k=d.dataset.k,o=(ls.get("kp:open")||[]).filter(x=>x!==k);if(d.open)o.push(k);ls.set("kp:open",o)},true);
+function updSum(){const cv=(id,t)=>{const e=$(id);if(e)e.textContent=t};
+  cv("cvCase",(CASES.find(c=>c[0]===st.case)||[0,""])[1]);cv("cvSize",st.size+" pt");cv("cvFloor",st.floor==="All"?"All floors":st.floor);cv("cvZoom",Math.round(ZOOM*100)+"%");
+  const gs=groups();cv("setSum",[[...new Set(gs.map(g=>finName(curFin(g),g)))].join(", "),st.floor==="All"?"":st.floor,ZOOM===1?"":"zoom "+Math.round(ZOOM*100)+"%"].filter(Boolean).join(" · "))}
+function initSettings(){document.querySelectorAll("details[data-k]").forEach(d=>{if(isOpen(d.dataset.k))d.open=true})}
 function finNote(g,sx){
   if(MODE==="builder")return `<span class="small">The client's link opens in this finish. They can tap others to compare.</span>`;
   const cur=curFin(g),pj=projFin(g),nm=v=>esc(finName(v,g));
@@ -170,7 +179,7 @@ $("finBox").addEventListener("click",e=>{
 // zoom: 1 = actual size (Lutron inches); remembered on this device
 const ZSTEPS=[.4,.5,.6,.75,.9,1,1.25,1.5,1.75,2];
 let ZOOM=(()=>{const z=+ls.get("kp:zoom");return ZSTEPS.includes(z)?z:ls.get("kp:view")==="compact"?.5:1})();
-function applyView(){document.documentElement.style.setProperty("--zoom",ZOOM);const v=$("zoomVal");if(v){v.textContent=Math.round(ZOOM*100)+"%";v.setAttribute("aria-pressed",ZOOM===1)}
+function applyView(){document.documentElement.style.setProperty("--zoom",ZOOM);if(typeof updSum==="function"&&$("setSum"))updSum();const v=$("zoomVal");if(v){v.textContent=Math.round(ZOOM*100)+"%";v.setAttribute("aria-pressed",ZOOM===1)}
   const s=$("zoomSel");if(s){s.querySelector('[data-z="-"]').disabled=ZOOM===ZSTEPS[0];s.querySelector('[data-z="+"]').disabled=ZOOM===ZSTEPS[ZSTEPS.length-1]}}
 function setZoom(z){ZOOM=z;ls.set("kp:zoom",z);applyView()}
 function initView(){const s=$("zoomSel");if(s&&!s.dataset.bound){s.dataset.bound=1;s.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const i=ZSTEPS.indexOf(ZOOM);
@@ -178,7 +187,7 @@ function initView(){const s=$("zoomSel");if(s&&!s.dataset.bound){s.dataset.bound
   applyView()}
 document.addEventListener("keydown",e=>{if(e.target.closest&&e.target.closest("input,textarea,select,dialog"))return;if(e.ctrlKey||e.metaKey||e.altKey)return;const i=ZSTEPS.indexOf(ZOOM);
   if(e.key==="+"||e.key==="=")setZoom(ZSTEPS[Math.min(ZSTEPS.length-1,i+1)]);else if(e.key==="-")setZoom(ZSTEPS[Math.max(0,i-1)]);else if(e.key==="0")setZoom(1)});
-function initBar(){initView();fix();finBar();segItems("case",CASES,"case");segItems("size",[["14","14 pt"],["12","12 pt"]],"size")}
+function initBar(){if(!initBar.done){initBar.done=1;initSettings()}initView();fix();finBar();segItems("case",CASES,"case");segItems("size",[["14","14 pt"],["12","12 pt"]],"size")}
 
 // ---------- keypad editor ----------
 const ed=$("ed");let cur=-1,edSnap=null,edKeep=false;
@@ -194,7 +203,7 @@ function openEd(i){cur=i;const k=D.kp[i];edSnap=clone(k);edKeep=false;ed.returnV
   $("floorList").innerHTML=floors().map(f=>`<option value="${esc(f)}">`).join("");
   const sel=$("edLay"),ln=typeOf(k)?k.type:"a:"+layName(k.cols);
   if(![...sel.options].some(o=>o.value===ln))sel.insertAdjacentHTML("beforeend",`<option value="${ln}">Alisse ${layName(k.cols)}</option>`);
-  sel.value=ln;fillFin();buildInputs();edPreview();
+  sel.value=ln;fillFin();buildInputs();edPreview();$("edMore").open=!matchMedia("(max-width:600px)").matches||isOpen("edmore");
   if(ed.showModal)ed.showModal();else ed.setAttribute("open","");
 }
 function buildInputs(){const k=D.kp[cur],t=typeOf(k);let idx=0;const nc=k.cols.length;
@@ -205,12 +214,14 @@ function buildInputs(){const k=D.kp[cur],t=typeOf(k);let idx=0;const nc=k.cols.l
 }
 function checkInputs(){const k=D.kp[cur];
   document.querySelectorAll("#edCols input").forEach(inp=>{const i=+inp.dataset.b,raw=(k.labels[i]||"").trim(),m=document.querySelector(`#edCols small[data-m="${i}"]`);
-    if(!raw){inp.classList.remove("bad");m.className="";m.textContent="No engraving";return}
-    const ln=fitLines(kase(raw),limitOf(k));inp.classList.toggle("bad",!ln);m.className=ln?"":"bad";
+    if(!raw){inp.classList.remove("bad");m.className="ok1";m.textContent="No engraving";return}
+    const ln=fitLines(kase(raw),limitOf(k));inp.classList.toggle("bad",!ln);m.className=ln?(ln.length===1?"ok1":""):"bad";
     m.textContent=ln?(ln.length===2?"Fits on 2 lines: "+ln.join(" / "):"Fits on 1 line"):typeOf(k)?"Too long (about 9 capital letters a line, 2 lines max). Shorten it or add a space to split it.":"Too long for Lutron's engraving (2 lines max). Shorten it or add a space to split it.";
   });
 }
-function edPreview(){$("edPv").className="pv "+wallCls(D.kp[cur]);$("edPv").innerHTML=plate(D.kp[cur]).html}
+function edPreview(){const k=D.kp[cur],g=grpOf(k),t=typeOf(k);$("edPv").className="pv "+wallCls(k);$("edPv").innerHTML=plate(k).html;
+  $("edMain").classList.toggle("multi",k.cols.length>1);$("edMain").style.setProperty("--nc",k.cols.length);
+  $("edMoreSum").textContent=[k.loc||"No location",k.floor?(/basement|floor|level|attic|roof|garage|cellar|apartment|apt\b|unit|suite|penthouse|residence|building|wing|house/i.test(k.floor)?k.floor:k.floor+" floor"):"",t?t[2]:"Alisse "+k.cols.reduce((a,b)=>a+b,0)+"-button",finName(kFin(k),g)].filter(Boolean).join(" · ")}
 function changed(){save();render();if(cur>=0)edPreview()}
 $("edCols").addEventListener("input",e=>{const i=e.target.dataset.b;if(i===undefined)return;D.kp[cur].labels[+i]=e.target.value;checkInputs();changed()});
 $("edN").addEventListener("input",e=>{D.kp[cur].n=e.target.value;$("edTitle").textContent="Keypad "+e.target.value;changed()});
@@ -224,14 +235,14 @@ function setType(k,v){
   if(k.finish&&!finOk(grpOf(k),k.finish))delete k.finish}
 let delArm=0;
 $("edDel").addEventListener("click",()=>{const b=$("edDel");
-  if(Date.now()-delArm>4000){delArm=Date.now();b.textContent="Tap again to delete";setTimeout(()=>{b.textContent="Delete keypad"},4000);return}
-  delArm=0;b.textContent="Delete keypad";const k=D.kp[cur];D.kp.splice(cur,1);edKeep=true;ed.close();save();render();toast("Keypad "+k.n+" deleted")});
+  if(Date.now()-delArm>4000){delArm=Date.now();b.textContent="Tap again to delete";setTimeout(()=>{b.innerHTML=DELH},4000);return}
+  delArm=0;b.innerHTML=DELH;const k=D.kp[cur];D.kp.splice(cur,1);edKeep=true;ed.close();save();render();toast("Keypad "+k.n+" deleted")});
 $("edDup").addEventListener("click",()=>{const k=clone(D.kp[cur]);delete k.ok;k.n=nextN();D.kp.splice(cur+1,0,k);save();render();openEd(cur+1);toast("Copied as keypad "+k.n)});
 $("edCancel").addEventListener("click",()=>ed.close("cancel"));
 ed.addEventListener("close",()=>{
   if(cur>=0&&edSnap&&!edKeep&&ed.returnValue!=="done"&&JSON.stringify(D.kp[cur])!==JSON.stringify(edSnap)){D.kp[cur]=edSnap;save();render();toast("Changes canceled")}
   else if(ed.returnValue==="done"&&cur>=0&&JSON.stringify(D.kp[cur])!==JSON.stringify(edSnap))toast("Keypad "+D.kp[cur].n+" saved");
-  edSnap=null;edKeep=false;cur=-1;delArm=0;$("edDel").textContent="Delete keypad"});
+  edSnap=null;edKeep=false;cur=-1;delArm=0;$("edDel").innerHTML=DELH});
 function nextN(){const ns=D.kp.map(k=>parseInt(k.n,10)).filter(n=>!isNaN(n));return String((ns.length?Math.max(...ns):0)+1)}
 $("addBtn").addEventListener("click",()=>{const fl=st.floor!=="All"?st.floor:(D.kp.length?D.kp[D.kp.length-1].floor:"First");
   const last=D.kp[D.kp.length-1],nk={n:nextN(),floor:fl,loc:"",cols:[3],labels:["","",""]};if(last&&last.type)setType(nk,last.type);
@@ -448,7 +459,7 @@ function useProject(p,email){
     if(local)$("banner").innerHTML=`<div class="banner">This link is newer than what was saved on this device, so you're seeing the link's version.</div>`;
     save()}
   st.finish=PF;st.fx={...PFX};
-  $("gate").hidden=true;$("app").hidden=false;initBar();render();
+  $("gate").hidden=true;{const w=$("gate").closest(".wrap");if(w&&!w.contains($("app")))w.hidden=true}$("app").hidden=false;initBar();render();
   $("helpLink").hidden=false;$("helpLink").onclick=showHelp;
   if(!ls.get("kp:helpSeen"))showHelp();
   LIVE=true;track("open");

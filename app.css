@@ -277,3 +277,53 @@ body.plv .top .actions,body.plv #subline{display:none}
 .linkbtn{font:inherit;background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;cursor:pointer}
 .ptab td small{overflow-wrap:anywhere}
 @media (max-width:720px){.ptab thead,.ptab .hs{display:none}.ptab,.ptab tbody,.ptab tr,.ptab td{display:block}.ptab tr{padding:12px 12px;border-bottom:1px solid var(--line)}.ptab tr:last-child{border-bottom:0}.ptab td{padding:0;border:0}.ptab td+td{margin-top:8px}.pact{justify-content:flex-start}}
+
+/* settings panel (closed by default) */
+.setbox{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-bottom:22px}
+.setbox>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 16px;font-weight:700}
+.setbox>summary::-webkit-details-marker,.ctl>summary::-webkit-details-marker,.edmore>summary::-webkit-details-marker{display:none}
+.setbox>summary::before,.ctl>summary::before{content:"";width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .15s;flex:none}
+.setbox[open]>summary::before,.ctl[open]>summary::before{transform:rotate(45deg)}
+.setbox .sbt{font-family:var(--display);font-size:15px}
+.setbox .sbv{color:var(--muted);font-weight:500;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.setbox[open] .sbv{display:none}
+.setbox .bar{border:0;border-top:1px solid var(--line);border-radius:0 0 10px 10px;margin:0;flex-direction:column;align-items:stretch;gap:0;padding:4px 16px 8px}
+.setbox .ctl{display:block;border-bottom:1px solid var(--line);padding:0}
+.setbox .ctl:last-child{border-bottom:0}
+.ctl>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:11px 0;min-width:0}
+.ctl>summary>span{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;flex:none}
+.ctl>summary .cv{margin-left:auto;font-weight:600;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctl[open]>summary{padding-bottom:8px}
+.ctl[open]{padding-bottom:12px}
+.ctl>.seg,.ctl>.finnote,.ctl>.zhint{margin-top:6px}
+.ctl>.zhint{display:block;color:var(--muted);font-size:11px}
+/* keypad editor: details row + preview beside the buttons */
+.edmore{border:1px solid var(--line);border-radius:8px}
+.edmore>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 12px;font-size:13px;color:var(--muted)}
+.edmore>summary>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.edmore .edch{margin-left:auto;flex:none;font-weight:600;color:var(--accent)}
+.edmore[open] .edch{display:none}
+.edmore[open]>summary{border-bottom:1px solid var(--line)}
+.edmore .row3{padding:12px}
+.edmain{display:flex;flex-direction:column;gap:14px}
+@media (max-width:600px){
+  dialog#ed{width:100vw;max-width:100vw;max-height:100dvh;height:100dvh;border-radius:0;margin:0}
+  #ed .dlg{padding:12px 12px 0;gap:10px;min-height:100%;box-sizing:border-box}
+  #ed h3{font-size:17px}
+  .edmain{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start}
+  .edmain.multi{grid-template-columns:1fr}
+  #ed .pv{padding:8px;border-radius:8px;align-self:start}
+  #ed .plate,#ed .plate.fam{--pw:96px}
+  #ed .edmain.multi .plate,#ed .edmain.multi .plate.fam{--pw:84px}
+  .edmain.multi .cols{grid-template-columns:repeat(var(--nc),minmax(0,1fr));gap:8px}
+  #ed .colh{font-size:11px;margin:0 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #ed .cols{gap:6px}
+  #ed .bl{margin-bottom:6px;gap:1px}
+  #ed .bl input{padding:8px 9px;font-size:16px}
+  #ed .bl small.ok1{display:none}
+  #ed .dfoot{position:sticky;bottom:0;margin-top:auto;background:var(--surface);border-top:1px solid var(--line);padding:10px 0 calc(12px + env(safe-area-inset-bottom));flex-wrap:nowrap;z-index:2}
+  #ed .dfoot .r{flex-wrap:nowrap;gap:6px}
+  #ed .dfoot .btnx{padding:8px 11px;font-size:14px}
+  #ed .hs{display:none}
+}
+@media (max-width:600px){.wrap{padding-block:16px 40px}.top{margin-bottom:12px}}
