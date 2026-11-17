@@ -206,3 +206,30 @@ textarea.paste{font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;color:var(--f
 .zoomseg button[data-z="1"]{min-width:64px}
 .zoomseg button:disabled{opacity:.4;cursor:default}
 .zhint{font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)}
+/* Keypad cards: numbered header bar (option B) */
+.kp.card{display:flex;flex-direction:column;align-items:stretch;gap:0;margin:0;padding:0;background:var(--surface);border:2px solid var(--fg);border-radius:10px;overflow:hidden}
+.kp.card .khead{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--fg);color:var(--bg)}
+.kp.card .num{flex:none;min-width:40px;height:40px;padding:0 6px;box-sizing:border-box;border-radius:8px;background:var(--bg);color:var(--fg);display:flex;align-items:center;justify-content:center;font:800 20px/1 var(--display)}
+.kp.card .num.long{font-size:14px}
+.kp.card .kt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.kp.card .room{font-family:var(--display);font-size:19px;font-weight:700;line-height:1.15;overflow-wrap:anywhere}
+.kp.card .spot{font-size:14px;line-height:1.3;opacity:.8;overflow-wrap:anywhere}
+.kp.card .okb{position:static;flex:none;border-color:rgba(255,255,255,.5);background:transparent;color:rgba(255,255,255,.75);box-shadow:none}
+.kp.card .okb:hover{border-color:#fff;color:#fff}
+.kp.card .okb[aria-pressed="true"]{background:#fff;color:var(--okc);border-color:#fff}
+.kp.card .wallbox{flex:1;align-items:center;border-radius:0;padding:22px 0}
+.kp.card .cap{padding:8px 12px 10px;text-align:left;display:flex;flex-direction:column;gap:4px}
+.kp.card .kfoot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.kp.card .tag{margin:0;font-size:11px}
+.kp.card .edit,.kp.card .appr{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+.kp.card:hover .wallbox,.kp.card:focus-visible .wallbox{box-shadow:none}
+.kp.card:hover,.kp.card:focus-visible{box-shadow:0 0 0 3px var(--accent)}
+.kp.card.ok{border-color:var(--okc)}
+.kp.card.ok .khead{background:var(--okc);color:#fff}
+.kp.card.ok .num{background:#fff;color:var(--okc)}
+.kp.card.ok .wallbox,.kp.card.ok:hover .wallbox{box-shadow:none}
+.kp.card.ok:hover{box-shadow:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .kp.card .okb{border-color:rgba(0,0,0,.4);color:rgba(0,0,0,.6)}}
+:root[data-theme="dark"] .kp.card .okb{border-color:rgba(0,0,0,.4);color:rgba(0,0,0,.6)}
+@media print{.kp.card{border-width:1px}.kp.card .khead{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.kp.card .cap{box-sizing:border-box;width:auto}.kp.card .edit,.kp.card .appr{display:inline}
