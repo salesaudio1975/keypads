@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26S";   // shown at the bottom of every page; bump with each release
+const VERSION="11-17-26T";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -203,7 +203,7 @@ function openEd(i){cur=i;edFocus=-1;const k=D.kp[i];edSnap=clone(k);edKeep=false
   $("floorList").innerHTML=floors().map(f=>`<option value="${esc(f)}">`).join("");
   const sel=$("edLay"),ln=typeOf(k)?k.type:"a:"+layName(k.cols);
   if(![...sel.options].some(o=>o.value===ln))sel.insertAdjacentHTML("beforeend",`<option value="${ln}">Alisse ${layName(k.cols)}</option>`);
-  sel.value=ln;fillFin();buildInputs();edPreview();$("edMore").open=isOpen("edmore");
+  sel.value=ln;fillFin();buildInputs();edPreview();$("edMore").open=isOpen("edinfo");
   if(ed.showModal)ed.showModal();else ed.setAttribute("open","");
 }
 document.addEventListener("focusin",e=>{if(e.target.matches&&e.target.matches("#edCols input")){edFocus=+e.target.dataset.b;edMark()}});
