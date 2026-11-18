@@ -388,5 +388,4 @@ body.plv .top .actions,body.plv #subline{display:none}
 #edGangs:empty{display:none}
 #edGangs .gbtns{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 #edGangs .gbtns .small{font-size:12px;color:var(--muted)}
-#md .mdtop{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 #md textarea{min-height:220px}
