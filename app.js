@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26R";   // shown at the bottom of every page; bump with each release
+const VERSION="11-18-26A";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -62,7 +62,7 @@ function setProj(g,v){if(g==="alisse")PF=v;else PFX[g]=v}
 const finOk=(g,v)=>finList(g).some(f=>f[0]===v);
 const kFin=k=>{const g=grpOf(k);return k&&k.finish&&finOk(g,k.finish)?k.finish:curFin(g)};
 function save(){
-  if(MODE==="builder"){ls.set("kpBuilder",{d:D,st:pickSt(),b:B});const o=$("bOut");if(o)o.hidden=true}
+  if(MODE==="builder"){ls.set("kpBuilder",{d:D,st:pickSt(),b:B});const o=$("bOut");if(o)o.hidden=true;bSum()}
   else if(D.id){ls.set("kp:"+D.id,{d:D,st:pickSt(),rev:D.rev,pf:PF,pfx:PFX});if(LIVE)track("edit")}
 }
 const pickSt=()=>({finish:st.finish,fx:{...st.fx},case:st.case,size:st.size});
@@ -203,7 +203,7 @@ function openEd(i){cur=i;edFocus=-1;const k=D.kp[i];edSnap=clone(k);edKeep=false
   $("floorList").innerHTML=floors().map(f=>`<option value="${esc(f)}">`).join("");
   const sel=$("edLay"),ln=typeOf(k)?k.type:"a:"+layName(k.cols);
   if(![...sel.options].some(o=>o.value===ln))sel.insertAdjacentHTML("beforeend",`<option value="${ln}">Alisse ${layName(k.cols)}</option>`);
-  sel.value=ln;fillFin();buildInputs();edPreview();$("edMore").open=!matchMedia("(max-width:600px)").matches||isOpen("edmore");
+  sel.value=ln;fillFin();buildInputs();edPreview();$("edMore").open=isOpen("edmore");
   if(ed.showModal)ed.showModal();else ed.setAttribute("open","");
 }
 document.addEventListener("focusin",e=>{if(e.target.matches&&e.target.matches("#edCols input")){edFocus=+e.target.dataset.b;edMark()}});
@@ -552,7 +552,10 @@ function initList(){const hasApi=!!KP_API;$("vtabs").hidden=!hasApi;if(!hasApi)r
   else setView("list")}
 function builderFill(){
   $("bTitle").value=D.title;$("bClient").value=B.client;$("bOut").hidden=true;
+  $("bSetup").open=!(D.kp.length&&D.title.trim()&&B.client);bSum();
 }
+function bSum(){const e=$("bSum");if(!e)return;const n=D.kp.length;
+  e.textContent=[D.title.trim()||"No name yet",B.client||"no client email",n?n+" keypad"+(n===1?"":"s"):"no keypads"].join(" · ")}
 function startBuilder(){
   const s=ls.get("kpBuilder");
   if(s&&s.d&&validKp(s.d.kp)){D=s.d;Object.assign(st,s.st||{});Object.assign(B,s.b||{})}
@@ -582,12 +585,12 @@ function startBuilder(){
     toast(kp.length+" keypads imported"+(ocr?". Button names on "+ocr+" were read from Lutron's pictures, so check the spelling.":"")+(blank?". "+blank+" came in without button names, so tap those to type them.":""))});
   $("bMake").addEventListener("click",async()=>{
     const err=[];if(!D.title.trim())err.push("a project name");if(!/^\S+@\S+\.\S+$/.test(B.client))err.push("the client's email");if(!D.kp.length)err.push("at least one keypad");
-    if(err.length){$("bErr").textContent="Add "+err.join(", ")+" first.";return}
+    if(err.length){$("bErr").textContent="Add "+err.join(", ")+" first.";$("bSetup").open=true;return}
     $("bErr").textContent="";
     D.id=D.id||(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(36).slice(2));
     D.replyTo=SALES;D.rev=Date.now();save();
     const url=await makeLink(B.client);
-    $("bLink").textContent=url;$("bOut").hidden=false;
+    $("bLink").textContent=url;$("bOut").hidden=false;$("bOut").scrollIntoView({behavior:"smooth",block:"nearest"});
     $("bCopy").onclick=()=>copy(url);
     const body=`Here are your keypads for ${D.title}. Open the link, enter this email address (${B.client}), and tap any keypad to change the button names. When you're done, tap "Send changes".\n\n${url}\n`;
     $("bMail").href="mailto:"+encodeURIComponent(B.client)+"?subject="+encodeURIComponent(D.title+" keypads")+"&body="+encodeURIComponent(body);
