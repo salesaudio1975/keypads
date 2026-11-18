@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). projects.html = the team page (projects list + make a project link; new.html forwards there).
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26W";   // shown at the bottom of every page; bump with each release
+const VERSION="11-18-26A";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -81,6 +81,24 @@ function kase(t){if(st.case==="caps")return t.toUpperCase();if(st.case==="lower"
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 const tooLong=(l,k)=>l.trim()&&!fitLines(kase(l.trim()),limitOf(k));
 
+// ---------- what changed since the team sent the link (Jeff, Nov 18: "some way for me to see that that button has been edited") ----------
+// "Make client link" stamps each keypad with what was sent (k.sent) and the project with the list sent (D.sent)
+const T=s=>String(s||"").replace(/\s+/g," ").trim();
+const chgB=(k,i)=>!!(k.sent&&T(k.labels[i])!==T(k.sent.l[i]));
+function kpChg(k){const c={btns:[],type:false,where:false,isNew:false,note:T(k.note)&&T(k.note)!==T(k.sent&&k.sent.note)?T(k.note):""};
+  if(!k.sent){c.isNew=!!(D.sent&&D.sent.length);}
+  else{k.labels.forEach((l,i)=>{if(chgB(k,i))c.btns.push(i)});c.type=typeName(k)!==k.sent.ty;c.where=T(k.loc)!==T(k.sent.loc)||T(k.floor)!==T(k.sent.floor)}
+  c.any=!!(c.btns.length||c.type||c.where||c.isNew||c.note);return c}
+const gone=()=>{if(!D.sent)return[];const now=new Set(D.kp.map(k=>T(k.n)));return D.sent.filter(x=>!now.has(T(x.n)))};
+function stampSent(){D.kp.forEach(k=>{k.sent={l:k.labels.slice(),ty:typeName(k),loc:k.loc||"",floor:k.floor||"",note:k.note||""}});D.sent=D.kp.map(k=>({n:String(k.n),loc:k.loc||""}))}
+let ONLY=ls.get("kp:only")===true;
+function chgText(k,c){const who=MODE==="builder"?"Client ":"You ",out=[];
+  if(c.isNew)out.push(who+"added this keypad");
+  if(c.btns.length)out.push(who.trim()+" changed "+c.btns.map(i=>`<b>${esc(T(k.sent.l[i])||"(blank)")}</b> → <b>${esc(T(k.labels[i])||"(blank)")}</b>`).join(", "));
+  if(c.type)out.push("Type was "+esc(k.sent.ty));
+  if(c.where)out.push("Was "+esc([k.sent.loc,k.sent.floor].filter(Boolean).join(", ")||"no location"));
+  return out.join(". ")}
+
 // ---------- drawing ----------
 const YS={1:[50],2:[32,68],3:[25,50,75]};
 const XS={1:[50],2:[33,67],3:[25,50,75]};
@@ -92,9 +110,9 @@ function famPlate(k){
   const lab=()=>{const raw=(k.labels[idx]||"").trim(),tx=kase(raw),ln=raw?fitLines(tx,lim):[];if(raw&&!ln)bad.push(raw);idx++;
     return `<span class="tx${raw&&!ln?" bad":""}">${!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(tx)}</span>`};
   const sl=t[6]&&t[6].sl;
-  const cols=sl?`<div class="kcol slots">${[...sl].map(c=>c==="b"?`<div class="key">${lab()}</div>`:c==="r"?`<div class="key rl"><span>▽</span><span>△</span></div>`:c==="i"?`<div class="ir"><i></i></div>`:`<div class="gapslot"></div>`).join("")}</div>`:t[4].map(cnt=>{let h="";
+  const cols=sl?`<div class="kcol slots">${[...sl].map(c=>c==="b"?`<div class="key${chgB(k,idx)?" chg":""}">${lab()}</div>`:c==="r"?`<div class="key rl"><span>▽</span><span>△</span></div>`:c==="i"?`<div class="ir"><i></i></div>`:`<div class="gapslot"></div>`).join("")}</div>`:t[4].map(cnt=>{let h="";
     for(let i=0;i<cnt;i++,idx++){const raw=(k.labels[idx]||"").trim(),tx=kase(raw),ln=raw?fitLines(tx,lim):[];if(raw&&!ln)bad.push(raw);
-      h+=`<div class="key"><span class="tx${raw&&!ln?" bad":""}">${!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(tx)}</span></div>`}
+      h+=`<div class="key${chgB(k,idx)?" chg":""}"><span class="tx${raw&&!ln?" bad":""}">${!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(tx)}</span></div>`}
     if(t[5])h+=`<div class="key rl" style="flex:0 0 calc(var(--pw)*${RLH}/3.55)"><span>▽</span><span>△</span></div>`;
     return `<div class="kcol">${h}</div>`}).join("");
   const g=F.fg,c=(finList(g).find(f=>f[0]===kFin(k))||finList(g)[0])[2],dk=lum(c)<.18;
@@ -109,7 +127,7 @@ function plate(k){
       const raw=(k.labels[idx]||"").trim(),t=kase(raw),ln=raw?fitLines(t,limitOf(k)):[];
       if(raw&&!ln)bad.push(raw);
       const html=!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(t);
-      cells.push(`<div class="cell" style="left:${XS[nc][ci]}%;top:${ys[i]}%"><i class="bt"></i><span class="tx${raw&&!ln?" bad":""}">${html}</span></div>`);
+      cells.push(`<div class="cell${chgB(k,idx)?" chg":""}" style="left:${XS[nc][ci]}%;top:${ys[i]}%"><i class="bt"></i><span class="tx${raw&&!ln?" bad":""}">${html}</span></div>`);
     }});
   return {html:`<div class="plate ${nc===1?"one":nc===2?"two":"three"}">${cells.join("")}</div>`,bad};
 }
@@ -119,6 +137,11 @@ const finName=(v,g="alisse")=>(finList(g).find(f=>f[0]===v)||[0,v])[1];
 const typeName=k=>{const t=typeOf(k);return t?t[2]:"Alisse "+layName(k.cols)};
 const tagOf=k=>{const t=typeOf(k),nb=k.cols.reduce((a,b)=>a+b,0);return (t?FAMS[t[1]].n+(t[6]&&t[6].hy?" hybrid":"")+" ":groups().length>1?"Alisse ":"")+nb+"-button"};
 const groups=()=>{const s=new Set(D.kp.map(grpOf));if(!s.size)s.add("alisse");return GROUPS.filter(g=>s.has(g))};
+function chgBar(){if(!D.sent)return"";const ch=D.kp.filter(k=>kpChg(k).any),nb=D.kp.reduce((a,k)=>a+kpChg(k).btns.length,0),nn=D.kp.filter(k=>kpChg(k).note).length,gn=gone();
+  if(!ch.length&&!gn.length){if(ONLY){ONLY=false;ls.set("kp:only",false)}return ""}
+  const who=MODE==="builder"?"The client":"You";
+  const bits=[nb?nb+" button name"+(nb===1?"":"s"):"",nn?nn+" note"+(nn===1?"":"s"):"",gn.length?"removed "+gn.map(x=>"keypad "+esc(x.n)+(x.loc?" ("+esc(x.loc)+")":"")).join(", "):""].filter(Boolean);
+  return `<div class="chgbar"><p><b>✎ ${who} changed ${ch.length} keypad${ch.length===1?"":"s"}</b>${bits.length?": "+bits.join(", "):""}. Changed buttons have an orange outline.</p><button type="button" class="btnx" id="onlyChg" aria-pressed="${ONLY}">${ONLY?"Show all keypads":"Show only changed"}</button></div>`}
 function render(){
   const name=D.title||(MODE==="builder"?"New project":"Your");
   if(!document.body.classList.contains("plv")){$("title").textContent=name+" keypads";document.title=name+" keypads"}
@@ -128,13 +151,13 @@ function render(){
   $("size").closest(".ctl").hidden=!groups().includes("alisse");
   const tot=D.kp.length,okN=D.kp.filter(k=>k.ok).length;
   const badK=D.kp.filter(k=>k.labels.some(l=>tooLong(l,k)));
-  $("out").innerHTML=(badK.length?`<div class="pagewarn" role="alert"><p><b>⚠ ${badK.length} keypad${badK.length===1?" has a name":"s have names"} too long to engrave:</b> ${badK.slice(0,6).map(k=>"keypad "+esc(k.n)+" ("+k.labels.filter(l=>tooLong(l,k)).map(l=>esc(l.trim())).join(", ")+")").join(", ")}${badK.length>6?", and "+(badK.length-6)+" more":""}. Shorten ${badK.length===1?"it":"them"} before approving.</p><button type="button" id="showBad">Show me</button></div>`:"")+(tot?`<div class="apbar${okN===tot?" done":""}"><p><b>${okN===tot?"Every keypad is approved.":"Check off each keypad when it's right."}</b> ${okN===tot?"Tap “Send changes” to send them to us. Tap a ✓ to unlock a keypad.":"Tap the ✓ in a keypad's corner to approve it and lock it. Tap it again to unlock."} <span class="apn">${okN} of ${tot} approved</span></p><div class="r">${okN<tot?`<button type="button" class="btnx primary" data-all="approve">✓ Approve all ${tot}</button>`:""}${okN?`<button type="button" class="btnx" data-all="unlock">Unlock all</button>`:""}</div></div>`:"")+fl.filter(f=>st.floor==="All"||f===st.floor).map(f=>{
-    const ks=D.kp.map((k,i)=>[k,i]).filter(([k])=>(k.floor||"No floor")===f);
+  $("out").innerHTML=(badK.length?`<div class="pagewarn" role="alert"><p><b>⚠ ${badK.length} keypad${badK.length===1?" has a name":"s have names"} too long to engrave:</b> ${badK.slice(0,6).map(k=>"keypad "+esc(k.n)+" ("+k.labels.filter(l=>tooLong(l,k)).map(l=>esc(l.trim())).join(", ")+")").join(", ")}${badK.length>6?", and "+(badK.length-6)+" more":""}. Shorten ${badK.length===1?"it":"them"} before approving.</p><button type="button" id="showBad">Show me</button></div>`:"")+chgBar()+(tot?`<div class="apbar${okN===tot?" done":""}"><p><b>${okN===tot?"Every keypad is approved.":"Check off each keypad when it's right."}</b> ${okN===tot?"Tap “Send changes” to send them to us. Tap a ✓ to unlock a keypad.":"Tap the ✓ in a keypad's corner to approve it and lock it. Tap it again to unlock."} <span class="apn">${okN} of ${tot} approved</span></p><div class="r">${okN<tot?`<button type="button" class="btnx primary" data-all="approve">✓ Approve all ${tot}</button>`:""}${okN?`<button type="button" class="btnx" data-all="unlock">Unlock all</button>`:""}</div></div>`:"")+fl.filter(f=>st.floor==="All"||f===st.floor).map(f=>{
+    const ks=D.kp.map((k,i)=>[k,i]).filter(([k])=>(k.floor||"No floor")===f&&(!ONLY||kpChg(k).any));if(!ks.length)return "";
     const nOk=ks.filter(([k])=>k.ok).length,all=nOk===ks.length;
     return `<section class="floor"><h2><span>${esc(/basement|floor|level|attic|roof|garage|cellar|apartment|apt\b|unit|suite|penthouse|residence|building|wing|house/i.test(f)?f:f+" floor")} · ${ks.length} keypad${ks.length===1?"":"s"}${nOk?` · ${all?"all ":""}${nOk} approved`:""}</span><button type="button" class="btnx apf${all?"":" go"}" data-floor="${esc(f)}" data-act="${all?"unlock":"approve"}">${all?"Unlock this floor":"✓ Approve this floor"}</button></h2><div class="grid">${ks.map(([k,i])=>{
-      const p=plate(k),own=k.finish&&finOk(grpOf(k),k.finish);
+      const p=plate(k),own=k.finish&&finOk(grpOf(k),k.finish),cg=kpChg(k),ct=chgText(k,cg);
       const lp=String(k.loc||"").split("·").map(x=>x.trim()).filter(Boolean),room=lp[0]||"No location yet",spot=lp.slice(1).join(" · ")||(f==="No floor"?"":/basement|floor|level|attic|roof|garage|cellar|apartment|apt\b|unit|suite|penthouse|residence|building|wing|house/i.test(f)?f:f+" floor");
-      return `<div class="kp card${k.ok?" ok":""}${p.bad.length?" toolong":""}" tabindex="0" role="button" data-i="${i}" aria-label="${k.ok?"Keypad "+esc(k.n)+", "+esc(room)+", approved":"Edit keypad "+esc(k.n)+", "+esc(room)}"><div class="khead"><span class="num${String(k.n).length>3?" long":""}">${esc(k.n)}</span><div class="kt"><b class="room">${esc(room)}</b>${spot?`<span class="spot">${esc(spot)}</span>`:""}</div><button type="button" class="okb" data-ok="${i}" aria-pressed="${!!k.ok}" title="${k.ok?"Approved. Tap to unlock":"Approve and lock this keypad"}" aria-label="${k.ok?"Unlock keypad "+esc(k.n):"Approve keypad "+esc(k.n)}">✓</button></div>${p.bad.length?`<div class="strip">⚠ Name${p.bad.length>1?"s":""} too long: <b>${p.bad.map(x=>esc(x.trim())).join(", ")}</b><span>Tap to fix</span></div>`:""}<div class="wallbox ${wallCls(k)}">${p.html}</div><div class="cap">${(()=>{const g=grpOf(k),v=kFin(k),fc=(finList(g).find(x=>x[0]===v)||[0,v,"#ccc"])[2];return `<small class="fin${own?" own":""}"><i class="sw" style="background:${fc}"></i>${esc(finName(v,g)+codeOf(g,v))}${own?" (own finish)":MODE==="client"&&v!==projFin(g)?" (previewing)":""}</small>`})()}<div class="kfoot"><span class="tag">${esc(tagOf(k))}</span>${k.ok?`<span class="appr">✓ Approved</span>`:`<span class="edit">${p.bad.length?"Tap to fix":"Tap to edit"}</span>`}</div></div></div>`}).join("")}</div></section>`;
+      return `<div class="kp card${k.ok?" ok":""}${p.bad.length?" toolong":""}${cg.any?" changed":""}" tabindex="0" role="button" data-i="${i}" aria-label="${k.ok?"Keypad "+esc(k.n)+", "+esc(room)+", approved":"Edit keypad "+esc(k.n)+", "+esc(room)}"><div class="khead"><span class="num${String(k.n).length>3?" long":""}">${esc(k.n)}</span><div class="kt"><b class="room">${esc(room)}</b>${spot?`<span class="spot">${esc(spot)}</span>`:""}</div><button type="button" class="okb" data-ok="${i}" aria-pressed="${!!k.ok}" title="${k.ok?"Approved. Tap to unlock":"Approve and lock this keypad"}" aria-label="${k.ok?"Unlock keypad "+esc(k.n):"Approve keypad "+esc(k.n)}">✓</button></div>${p.bad.length?`<div class="strip">⚠ Name${p.bad.length>1?"s":""} too long: <b>${p.bad.map(x=>esc(x.trim())).join(", ")}</b><span>Tap to fix</span></div>`:""}${ct?`<div class="chgstrip">✎ ${ct}</div>`:""}${T(k.note)?`<div class="notestrip"><b>Note:</b> ${esc(T(k.note))}</div>`:""}<div class="wallbox ${wallCls(k)}">${p.html}</div><div class="cap">${(()=>{const g=grpOf(k),v=kFin(k),fc=(finList(g).find(x=>x[0]===v)||[0,v,"#ccc"])[2];return `<small class="fin${own?" own":""}"><i class="sw" style="background:${fc}"></i>${esc(finName(v,g)+codeOf(g,v))}${own?" (own finish)":MODE==="client"&&v!==projFin(g)?" (previewing)":""}</small>`})()}<div class="kfoot"><span class="tag">${esc(tagOf(k))}</span>${k.ok?`<span class="appr">✓ Approved</span>`:`<span class="edit">${p.bad.length?"Tap to fix":"Tap to edit"}</span>`}</div></div></div>`}).join("")}</div></section>`;
   }).join("")||`<p class="hint">No keypads yet. Tap “+ Add keypad”${MODE==="builder"?", or paste them from the Google Sheet above":""}.</p>`;
   updSum();
 }
@@ -203,7 +226,7 @@ function openEd(i){cur=i;edFocus=-1;const k=D.kp[i];edSnap=clone(k);edKeep=false
   $("floorList").innerHTML=floors().map(f=>`<option value="${esc(f)}">`).join("");
   const sel=$("edLay"),ln=typeOf(k)?k.type:"a:"+layName(k.cols);
   if(![...sel.options].some(o=>o.value===ln))sel.insertAdjacentHTML("beforeend",`<option value="${ln}">Alisse ${layName(k.cols)}</option>`);
-  sel.value=ln;fillFin();buildInputs();edPreview();$("edMore").open=isOpen("edinfo");
+  sel.value=ln;fillFin();buildInputs();edPreview();$("edMore").open=isOpen("edinfo");$("edNote").value=k.note||"";
   if(ed.showModal)ed.showModal();else ed.setAttribute("open","");
 }
 document.addEventListener("focusin",e=>{if(e.target.matches&&e.target.matches("#edCols input")){edFocus=+e.target.dataset.b;edMark()}});
@@ -215,9 +238,10 @@ function buildInputs(){const k=D.kp[cur],t=typeOf(k);let idx=0;const nc=k.cols.l
 }
 function checkInputs(){const k=D.kp[cur];
   document.querySelectorAll("#edCols input").forEach(inp=>{const i=+inp.dataset.b,raw=(k.labels[i]||"").trim(),m=document.querySelector(`#edCols small[data-m="${i}"]`);
-    if(!raw){inp.classList.remove("bad");m.className="ok1";m.textContent="No engraving";return}
+    const was=chgB(k,i)?(MODE==="builder"?"Client changed from “":"Was “")+(T(k.sent.l[i])||"blank")+"”. ":"";inp.classList.toggle("chg",!!was);
+    if(!raw){inp.classList.remove("bad");m.className="ok1";m.textContent=was+"No engraving";return}
     const ln=fitLines(kase(raw),limitOf(k));inp.classList.toggle("bad",!ln);m.className=ln?(ln.length===1?"ok1":""):"bad";
-    m.textContent=ln?(ln.length===2?"Fits on 2 lines: "+ln.join(" / "):"Fits on 1 line"):typeOf(k)?"Too long (about 9 capital letters a line, 2 lines max). Shorten it or add a space to split it.":"Too long for Lutron's engraving (2 lines max). Shorten it or add a space to split it.";
+    m.textContent=was+(ln?(ln.length===2?"Fits on 2 lines: "+ln.join(" / "):"Fits on 1 line"):typeOf(k)?"Too long (about 9 capital letters a line, 2 lines max). Shorten it or add a space to split it.":"Too long for Lutron's engraving (2 lines max). Shorten it or add a space to split it.");
   });
 }
 let edFocus=-1;
@@ -231,6 +255,7 @@ function changed(){save();render();if(cur>=0)edPreview()}
 $("edCols").addEventListener("input",e=>{const i=e.target.dataset.b;if(i===undefined)return;D.kp[cur].labels[+i]=e.target.value;checkInputs();changed()});
 $("edN").addEventListener("input",e=>{D.kp[cur].n=e.target.value;$("edTitle").textContent="Keypad "+e.target.value;changed()});
 $("edLoc").addEventListener("input",e=>{D.kp[cur].loc=e.target.value;changed()});
+$("edNote").addEventListener("input",e=>{const v=e.target.value.slice(0,1000);if(v.trim())D.kp[cur].note=v;else delete D.kp[cur].note;changed()});
 $("edFin").addEventListener("change",e=>{if(e.target.value)D.kp[cur].finish=e.target.value;else delete D.kp[cur].finish;changed()});
 $("edFloor").addEventListener("change",e=>{D.kp[cur].floor=e.target.value.trim()||"No floor";changed()});
 $("edLay").addEventListener("change",e=>{const k=D.kp[cur];setType(k,e.target.value);fillFin();buildInputs();changed()});
@@ -242,7 +267,7 @@ let delArm=0;
 $("edDel").addEventListener("click",()=>{const b=$("edDel");
   if(Date.now()-delArm>4000){delArm=Date.now();b.textContent="Tap again to delete";setTimeout(()=>{b.innerHTML=DELH},4000);return}
   delArm=0;b.innerHTML=DELH;const k=D.kp[cur];D.kp.splice(cur,1);edKeep=true;ed.close();save();render();toast("Keypad "+k.n+" deleted")});
-$("edDup").addEventListener("click",()=>{const k=clone(D.kp[cur]);delete k.ok;delete k.hid;delete k.hpos;k.n=nextN();D.kp.splice(cur+1,0,k);save();render();openEd(cur+1);toast("Copied as keypad "+k.n)});
+$("edDup").addEventListener("click",()=>{const k=clone(D.kp[cur]);delete k.ok;delete k.hid;delete k.hpos;delete k.sent;delete k.note;k.n=nextN();D.kp.splice(cur+1,0,k);save();render();openEd(cur+1);toast("Copied as keypad "+k.n)});
 $("edCancel").addEventListener("click",()=>ed.close("cancel"));
 ed.addEventListener("close",()=>{
   if(cur>=0&&edSnap&&!edKeep&&ed.returnValue!=="done"&&JSON.stringify(D.kp[cur])!==JSON.stringify(edSnap)){D.kp[cur]=edSnap;save();render();toast("Changes canceled")}
@@ -263,6 +288,7 @@ function bulkOk(list,on){
   toast((go.length?go.length+" keypad"+(go.length===1?"":"s")+" approved":"Nothing new to approve")+(skip.length?". Not approved, names too long: keypad "+skip.map(k=>k.n).join(", ")+". Shorten them first.":""),skip.length>0)}
 function tapKp(i){if(D.kp[i].ok){toast("Keypad "+D.kp[i].n+" is approved. Tap its check mark to unlock it.");return}openEd(i)}
 $("out").addEventListener("click",e=>{
+  if(e.target.closest("#onlyChg")){ONLY=!ONLY;ls.set("kp:only",ONLY);render();return}
   if(e.target.closest("#showBad")){if(st.floor!=="All"&&!document.querySelector("#out .kp.toolong")){st.floor="All";save();render()}
     const el=document.querySelector("#out .kp.toolong");if(el){el.scrollIntoView({behavior:"smooth",block:"center"});el.focus({preventScroll:true})}return}
   const a=e.target.closest("[data-all]");if(a){bulkOk(D.kp,a.dataset.all==="approve");return}
@@ -387,7 +413,7 @@ async function open_(token,email){
   return JSON.parse(new TextDecoder().decode(data));
 }
 const siteBase=()=>new URL("./",location.href).href;
-async function makeLink(email){return siteBase()+"#e="+await seal({v:1,id:D.id,title:D.title,replyTo:D.replyTo,rev:D.rev,kp:D.kp,st:{...pickSt(),finish:MODE==="builder"?st.finish:PF,fx:MODE==="builder"?{...st.fx}:{...PFX}}},email)}
+async function makeLink(email){return siteBase()+"#e="+await seal({v:1,id:D.id,title:D.title,replyTo:D.replyTo,rev:D.rev,kp:D.kp,sent:D.sent||null,st:{...pickSt(),finish:MODE==="builder"?st.finish:PF,fx:MODE==="builder"?{...st.fx}:{...PFX}}},email)}
 
 // ---------- send changes (client) ----------
 const sd=$("sd");
@@ -403,6 +429,13 @@ function track(ev){if(!KP_API||MODE!=="client"||!D.id||!EMAIL)return;clearTimeou
     const status=ev==="open"?"":ev==="send"?(all?"Approved, emailed":"Changes emailed"):(all?"Approved":"Client editing");
     await api({a:"client",id:D.id,ev,status,approved:okCount(),link:ev==="open"?"":await makeLink(EMAIL)},ev==="send")}catch(e){}};
   if(ev==="edit")trackT=setTimeout(go,6000);else go()}
+// the changes and notes, written out for the email (a link alone doesn't say what changed)
+function chgSummary(){const L=[];
+  D.kp.forEach(k=>{const c=kpChg(k);if(!c.any)return;const h="Keypad "+k.n+(k.loc?" ("+T(k.loc)+")":"")+": ",x=[];
+    if(c.isNew)x.push("new keypad");if(c.btns.length)x.push(c.btns.map(i=>"button "+(i+1)+" "+(T(k.sent.l[i])||"(blank)")+" -> "+(T(k.labels[i])||"(blank)")).join(", "));
+    if(c.type)x.push("type changed to "+typeName(k));if(c.where)x.push("location changed");if(c.note)x.push("note: "+c.note);L.push(h+x.join("; "))});
+  gone().forEach(g=>L.push("Keypad "+g.n+(g.loc?" ("+g.loc+")":"")+": removed"));
+  if(!L.length)return"";let t="\nWhat changed:\n- "+L.join("\n- ")+"\n";if(t.length>1500)t=t.slice(0,1480)+"…\n(more in the link)\n";return t}
 async function openSend(approved){
   $("sdTitle").textContent=approved?"All keypads approved":"Send your changes";
   $("sdText").textContent=approved?"Thank you! Every keypad is approved. Tap below to email your approval to Audio Breakthroughs, so we can order the engraving.":"This makes a link that opens the keypads exactly as you have them now. It opens with the same email as before.";
@@ -418,7 +451,7 @@ async function openSend(approved){
   const okTxt=all?"All "+ok.length+" keypads approved. ":ok.length?"Approved: keypad"+(ok.length>1?"s ":" ")+ok.join(", ")+" ("+ok.length+" of "+D.kp.length+"). ":"";
   const subj=(D.title||"Project")+(approved||all?" keypads approved":" keypad changes");
   const body=(approved?"I approve all "+ok.length+" keypads for "+(D.title||"this project")+" as shown in this link (finish: "+fn+(own.length?"; different finish on "+own.join(", "):"")+"). Open it with the same email as before:\n\n"+url+"\n"
-    :okTxt+"Here are my keypad changes (finish: "+fn+(own.length?"; different finish on "+own.join(", "):"")+"). Open this link and use the same email as before:\n\n"+url+"\n")+(EMAIL?"\nFrom: "+EMAIL+"\n":"");
+    :okTxt+"Here are my keypad changes (finish: "+fn+(own.length?"; different finish on "+own.join(", "):"")+"). Open this link and use the same email as before:\n\n"+url+"\n")+chgSummary()+(EMAIL?"\nFrom: "+EMAIL+"\n":"");
   $("sdMail").href="mailto:"+SALES+"?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body);
   $("sdCopy").onclick=()=>copy(url);
   $("sdMail").onclick=()=>track("send");
@@ -431,8 +464,8 @@ async function copy(t){try{await navigator.clipboard.writeText(t);toast("Link co
 // ---------- CSV, print, reset ----------
 $("csvBtn").addEventListener("click",()=>{
   const q=v=>/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':String(v);
-  const rows=[["Keypad","Floor","Location","Layout",...Array.from({length:9},(_,i)=>"Button "+(i+1)),"Finish (if different)","Approved"]];
-  D.kp.forEach(k=>rows.push([k.n,k.floor,k.loc,typeOf(k)?typeOf(k)[2]:layName(k.cols),...Array.from({length:9},(_,i)=>k.labels[i]||""),k.finish&&finOk(grpOf(k),k.finish)?finName(k.finish,grpOf(k)):"",k.ok?"Yes":""]));
+  const rows=[["Keypad","Floor","Location","Layout",...Array.from({length:9},(_,i)=>"Button "+(i+1)),"Finish (if different)","Approved","Note"]];
+  D.kp.forEach(k=>rows.push([k.n,k.floor,k.loc,typeOf(k)?typeOf(k)[2]:layName(k.cols),...Array.from({length:9},(_,i)=>k.labels[i]||""),k.finish&&finOk(grpOf(k),k.finish)?finName(k.finish,grpOf(k)):"",k.ok?"Yes":"",T(k.note)]));
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([rows.map(r=>r.map(q).join(",")).join("\r\n")],{type:"text/csv"}));
   a.download=(D.title||"keypads").replace(/[^\w -]/g,"")+" keypads.csv";document.body.appendChild(a);a.click();a.remove();
 });
@@ -441,7 +474,7 @@ $("printBtn").addEventListener("click",()=>window.print());
 function keFile(){const parts=k=>{const p=String(k.loc||"").split(/\s+·\s+/);return p.length>1?[p[0],p.slice(1).join(" · ")]:["",String(k.loc||"")]};
   return {kind:"keypad import",version:1,job:D.title.trim()||"Keypads",made:new Date().toISOString(),made_by:"Keypads site "+VERSION,
     keypads:D.kp.map(k=>{const [room,name]=parts(k),hp=Array.isArray(k.hpos)&&k.hpos.length===k.labels.length?k.hpos:null;
-      return {hid:k.hid||"",n:String(k.n),floor:k.floor||"",loc:k.loc||"",room,name,type:typeOf(k)?typeOf(k)[2]:"Alisse "+layName(k.cols),approved:!!k.ok,
+      return {hid:k.hid||"",n:String(k.n),floor:k.floor||"",loc:k.loc||"",room,name,note:T(k.note),type:typeOf(k)?typeOf(k)[2]:"Alisse "+layName(k.cols),approved:!!k.ok,
         buttons:k.labels.map((t,i)=>({pos:hp?hp[i]:i+1,text:String(t||"")}))}})}}
 if($("keBtn"))$("keBtn").addEventListener("click",()=>{if(!D.kp.length){toast("There are no keypads to export yet.",1);return}
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(keFile(),null,1)],{type:"application/json"}));
@@ -468,7 +501,7 @@ function useProject(p,email){
   EMAIL=normEmail(email);
   const emails=ls.get("kp:emails")||[];if(!emails.includes(EMAIL)){emails.unshift(EMAIL);ls.set("kp:emails",emails.slice(0,10))}
   ls.set("kp:lastLink",location.hash);
-  ORIG={d:{id:p.id,title:p.title,replyTo:p.replyTo||"",rev:p.rev||0,kp:p.kp},st:p.st||{}};
+  ORIG={d:{id:p.id,title:p.title,replyTo:p.replyTo||"",rev:p.rev||0,kp:p.kp,sent:p.sent||null},st:p.st||{}};
   PF=FIN.some(f=>f[0]===(p.st||{}).finish)?p.st.finish:"nickel";ORIG.pf=PF;PFX=fixFx((p.st||{}).fx);ORIG.pfx={...PFX};
   const local=ls.get("kp:"+p.id);
   if(local&&validKp(local.d&&local.d.kp)&&(local.rev||0)>=(p.rev||0)){D=local.d;Object.assign(st,local.st||{});if(FIN.some(f=>f[0]===local.pf))PF=local.pf;if(local.pfx)PFX=fixFx(local.pfx)}
@@ -527,7 +560,7 @@ function drawRows(){if(!ROWS)return;const q=$("pSearch").value.trim().toLowerCas
   :!rs.length?`<p class="hint">${q?`No ${JOB.toLowerCase()} jobs match “${esc(q)}”.`:JOB==="Open"?"No open jobs. Everything is closed.":"No closed jobs yet. Tap “Close job” on a finished project to move it here."}${n[other]?` ${n[other]} ${other.toLowerCase()} job${n[other]===1?"":"s"}${q?(n[other]===1?" matches":" match"):""} under <button type="button" class="linkbtn" data-j="${other}">${other==="Open"?"Open jobs":"Closed"}</button>.`:""}</p>`:
   `<table class="ptab"><thead><tr><th>Project</th><th class="hs">Keypads</th><th>Status</th><th class="hs">Last activity</th><th></th></tr></thead><tbody>${rs.map(r=>`<tr data-id="${esc(r.id)}"><td class="pn"><b>${esc(r.title||"Untitled")}</b><small>${esc(r.client)}</small></td><td class="hs">${esc(r.keypads)}<small>${esc(r.types)}${r.finish?" · "+esc(r.finish):""}</small></td><td><span class="pst ${stCls(r.status)}">${esc(r.status||"Link sent")}</span>${r.approved?`<small>${esc(r.approved)} approved</small>`:""}</td><td class="hs">${esc(when(r.last))}</td><td><div class="pact"><button type="button" class="btnx primary" data-act="open">Open</button><button type="button" class="btnx" data-act="copy">Copy link</button><button type="button" class="btnx" data-act="job">${jobOf(r)==="Open"?"Close job":"Reopen"}</button><button type="button" class="btnx danger" data-act="rm" aria-label="Remove from list">${rmArm===r.id?"Tap to remove":"Remove"}</button></div></td></tr>`).join("")}</tbody></table>`}
 function loadIntoBuilder(p,email,id){const s0=p.st||{};
-  D={id:p.id||id||"",title:p.title||"",replyTo:SALES,rev:p.rev||0,kp:p.kp};
+  D={id:p.id||id||"",title:p.title||"",replyTo:SALES,rev:p.rev||0,kp:p.kp,sent:p.sent||null};
   st.finish=s0.finish||"nickel";st.fx=fixFx(s0.fx);if(s0.case)st.case=s0.case;if(s0.size)st.size=s0.size;st.floor="All";fix();
   B.client=normEmail(email);save();builderFill();$("bPaste").value="";initBar();setView("edit");window.scrollTo(0,0)}
 async function openRow(r){
@@ -595,13 +628,13 @@ function startBuilder(){
   $("bClient").addEventListener("input",e=>{B.client=e.target.value.trim();save()});
   $("bImport").addEventListener("click",()=>{const kp=parseTable($("bPaste").value);
     if(!kp.length){toast("Nothing to import. Copy the rows from the Keypads tab first.");return}
-    D.kp=kp;save();initBar();render();$("bPaste").value="";toast(kp.length+" keypads imported")});
+    D.kp=kp;D.sent=null;save();initBar();render();$("bPaste").value="";toast(kp.length+" keypads imported")});
   $("bFile").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;e.target.value="";
     const pdf=/\.pdf$/i.test(f.name)||f.type==="application/pdf",json=/\.json$/i.test(f.name);let kp=[],jj=null;
     try{if(pdf){toast("Reading the engraving report…");kp=await readReport(f)}else if(json){jj=JSON.parse(await f.text());kp=labelsToKp(jj)}else kp=parseTable(await f.text())}
     catch(err){toast(pdf?"Couldn't read that PDF. Use a Lutron Designer engraving report.":"Couldn't read that file");return}
     if(!kp.length){toast(pdf?"No keypads found. Use a Lutron Designer engraving report.":"No keypads found in that file");return}
-    D.kp=kp;if(pdf||json)adoptFinishes();
+    D.kp=kp;D.sent=null;if(pdf||json)adoptFinishes();
     if(jj&&jj.job&&!D.title.trim()){D.title=String(jj.job);$("bTitle").value=D.title}
     if(jj&&jj.clientEmail&&!B.client){B.client=String(jj.clientEmail);$("bClient").value=B.client}
     save();initBar();render();
@@ -613,7 +646,7 @@ function startBuilder(){
     if(err.length){$("bErr").textContent="Add "+err.join(", ")+" first.";$("bSetup").open=true;return}
     $("bErr").textContent="";
     D.id=D.id||(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(36).slice(2));
-    D.replyTo=SALES;D.rev=Date.now();save();
+    D.replyTo=SALES;D.rev=Date.now();stampSent();save();render();
     const url=await makeLink(B.client);
     $("bLink").textContent=url;$("bOut").hidden=false;$("bOut").scrollIntoView({behavior:"smooth",block:"nearest"});
     $("bCopy").onclick=()=>copy(url);
