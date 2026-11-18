@@ -8,7 +8,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <title>Keypads</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="app.css?v=20261117w">
+<link rel="stylesheet" href="app.css?v=20261118a">
 </head>
 <body data-mode="client">
 <div class="wrap"><div class="gate" id="gate" hidden>
@@ -64,6 +64,7 @@
   </details>
   <datalist id="floorList"></datalist>
   <div class="edmain" id="edMain"><div class="pv" id="edPv"></div><div class="cols" id="edCols"></div></div>
+  <label class="f ednote">Note for Audio Breakthroughs <span class="small">(optional)</span><textarea id="edNote" rows="2" maxlength="1000" placeholder="Anything else about this keypad, like what a button should turn on, or a change to the programming"></textarea></label>
   <div class="dfoot">
     <div class="r"><button type="button" class="btnx danger" id="edDel">Delete<span class="hs"> keypad</span></button><button type="button" class="btnx" id="edDup">Duplicate</button></div>
     <div class="r"><button type="button" class="btnx" id="edCancel">Cancel</button><button type="submit" class="btnx primary" value="done" id="edDone">Done</button></div>
@@ -93,6 +94,6 @@
   <div class="dfoot"><span></span><div class="r"><button type="submit" class="btnx primary">Got it</button></div></div>
 </form></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="app.js?v=20261117w"></script>
+<script src="app.js?v=20261118a"></script>
 </body>
 </html>
