@@ -357,3 +357,9 @@ body.plv .top .actions,body.plv #subline{display:none}
 .bpaste .small{margin-bottom:8px}
 #bOut{margin-bottom:16px}
 @media (max-width:640px){.brow{grid-template-columns:1fr}.bset>summary{padding:11px 12px}.bbody{padding:12px}}
+
+/* open / closed jobs */
+.pjob{display:inline-flex;margin:0 0 12px}
+.pjob button{font-weight:600;padding:8px 14px}
+.pjob b{font-weight:700;opacity:.75;margin-left:2px}
+.pjob b:empty{display:none}

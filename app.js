@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26T";   // shown at the bottom of every page; bump with each release
+const VERSION="11-17-26U";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -489,7 +489,8 @@ window.addEventListener("hashchange",()=>{if(MODE==="client")location.reload()})
 function clearProject(){D={id:"",title:"",replyTo:"",rev:0,kp:[]};B.client="";ls.del("kpBuilder");builderFill();$("bPaste").value="";initBar();render();setView("edit");$("bTitle").focus();
   toast("New project started. Add a name, the client's email and the keypads.")}
 // ---- all projects (reads the shared Google Sheet) ----
-let ROWS=null,openArm="",rmArm="";
+let ROWS=null,openArm="",rmArm="",JOB=ls.get("kp:job")==="Closed"?"Closed":"Open";
+const jobOf=r=>r.job==="Closed"?"Closed":"Open";
 const teamTok=()=>{try{return localStorage.getItem("kpTeamTok")||""}catch(e){return""}};
 const linkTok=u=>{const m=String(u||"").match(/#e=([A-Za-z0-9_-]+)/);return m?m[1]:""};
 function summary(kp,s0){const set=new Set(kp.map(grpOf)),gs=GROUPS.filter(g=>set.has(g));if(!gs.length)gs.push("alisse");
@@ -506,9 +507,13 @@ async function loadRows(){if(!KP_API)return;$("pMsg").textContent="Loading proje
 const when=iso=>{if(!iso)return"";const d=new Date(iso);return isNaN(d)?"":d.toLocaleString([],{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})};
 const stCls=t=>/^approved/i.test(t)?"ok":/link sent/i.test(t)?"draft":"wait";
 function drawRows(){if(!ROWS)return;const q=$("pSearch").value.trim().toLowerCase();
-  const rs=ROWS.filter(r=>!q||[r.title,r.client,r.status,r.types,r.finish].join(" ").toLowerCase().includes(q)).sort((a,b)=>String(b.last).localeCompare(String(a.last)));
-  $("pRows").innerHTML=!ROWS.length?`<p class="hint">No projects yet. Each client link you make is added here, or tap “Add an existing link”.</p>`:!rs.length?`<p class="hint">No projects match “${esc(q)}”.</p>`:
-  `<table class="ptab"><thead><tr><th>Project</th><th class="hs">Keypads</th><th>Status</th><th class="hs">Last activity</th><th></th></tr></thead><tbody>${rs.map(r=>`<tr data-id="${esc(r.id)}"><td class="pn"><b>${esc(r.title||"Untitled")}</b><small>${esc(r.client)}</small></td><td class="hs">${esc(r.keypads)}<small>${esc(r.types)}${r.finish?" · "+esc(r.finish):""}</small></td><td><span class="pst ${stCls(r.status)}">${esc(r.status||"Link sent")}</span>${r.approved?`<small>${esc(r.approved)} approved</small>`:""}</td><td class="hs">${esc(when(r.last))}</td><td><div class="pact"><button type="button" class="btnx primary" data-act="open">Open</button><button type="button" class="btnx" data-act="copy">Copy link</button><button type="button" class="btnx danger" data-act="rm" aria-label="Remove from list">${rmArm===r.id?"Tap to remove":"Remove"}</button></div></td></tr>`).join("")}</tbody></table>`}
+  const hit=ROWS.filter(r=>!q||[r.title,r.client,r.status,r.types,r.finish].join(" ").toLowerCase().includes(q));
+  const n={Open:0,Closed:0};hit.forEach(r=>n[jobOf(r)]++);$("pnOpen").textContent=n.Open;$("pnClosed").textContent=n.Closed;
+  $("pJob").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.j===JOB));
+  const rs=hit.filter(r=>jobOf(r)===JOB).sort((a,b)=>String(b.last).localeCompare(String(a.last))),other=JOB==="Open"?"Closed":"Open";
+  $("pRows").innerHTML=!ROWS.length?`<p class="hint">No projects yet. Each client link you make is added here, or tap “Add an existing link”.</p>`
+  :!rs.length?`<p class="hint">${q?`No ${JOB.toLowerCase()} jobs match “${esc(q)}”.`:JOB==="Open"?"No open jobs. Everything is closed.":"No closed jobs yet. Tap “Close job” on a finished project to move it here."}${n[other]?` ${n[other]} ${other.toLowerCase()} job${n[other]===1?"":"s"}${q?(n[other]===1?" matches":" match"):""} under <button type="button" class="linkbtn" data-j="${other}">${other==="Open"?"Open jobs":"Closed"}</button>.`:""}</p>`:
+  `<table class="ptab"><thead><tr><th>Project</th><th class="hs">Keypads</th><th>Status</th><th class="hs">Last activity</th><th></th></tr></thead><tbody>${rs.map(r=>`<tr data-id="${esc(r.id)}"><td class="pn"><b>${esc(r.title||"Untitled")}</b><small>${esc(r.client)}</small></td><td class="hs">${esc(r.keypads)}<small>${esc(r.types)}${r.finish?" · "+esc(r.finish):""}</small></td><td><span class="pst ${stCls(r.status)}">${esc(r.status||"Link sent")}</span>${r.approved?`<small>${esc(r.approved)} approved</small>`:""}</td><td class="hs">${esc(when(r.last))}</td><td><div class="pact"><button type="button" class="btnx primary" data-act="open">Open</button><button type="button" class="btnx" data-act="copy">Copy link</button><button type="button" class="btnx" data-act="job">${jobOf(r)==="Open"?"Close job":"Reopen"}</button><button type="button" class="btnx danger" data-act="rm" aria-label="Remove from list">${rmArm===r.id?"Tap to remove":"Remove"}</button></div></td></tr>`).join("")}</tbody></table>`}
 function loadIntoBuilder(p,email,id){const s0=p.st||{};
   D={id:p.id||id||"",title:p.title||"",replyTo:SALES,rev:p.rev||0,kp:p.kp};
   st.finish=s0.finish||"nickel";st.fx=fixFx(s0.fx);if(s0.case)st.case=s0.case;if(s0.size)st.size=s0.size;st.floor="All";fix();
@@ -527,6 +532,9 @@ function initList(){const hasApi=!!KP_API;$("vtabs").hidden=!hasApi;if(!hasApi)r
   $("vtabs").addEventListener("click",e=>{const b=e.target.closest("button");if(b)setView(b.dataset.v)});
   $("pSearch").addEventListener("input",drawRows);
   $("pRefresh").addEventListener("click",loadRows);
+  const pickJob=j=>{JOB=j;ls.set("kp:job",j);drawRows()};
+  $("pJob").addEventListener("click",e=>{const b=e.target.closest("button[data-j]");if(b)pickJob(b.dataset.j)});
+  $("pRows").addEventListener("click",e=>{const b=e.target.closest(".linkbtn[data-j]");if(b)pickJob(b.dataset.j)});
   $("pNew").addEventListener("click",()=>{if(!D.kp.length&&!D.title.trim()||(ROWS||[]).some(x=>x.id===D.id)){clearProject();return}setView("edit");$("bNew").click();$("bNew").scrollIntoView({block:"center"})});
   $("pAddLink").addEventListener("click",()=>{$("pAddForm").hidden=false;$("pAddErr").textContent="";$("pAddUrl").focus()});
   $("pAddCancel").addEventListener("click",()=>{$("pAddForm").hidden=true});
@@ -543,6 +551,11 @@ function initList(){const hasApi=!!KP_API;$("vtabs").hidden=!hasApi;if(!hasApi)r
   $("pRows").addEventListener("click",async e=>{const b=e.target.closest("button[data-act]");if(!b)return;const tr=b.closest("tr"),r=(ROWS||[]).find(x=>x.id===tr.dataset.id);if(!r)return;
     if(b.dataset.act==="open")openRow(r);
     else if(b.dataset.act==="copy")copy(r.clink||r.link);
+    else if(b.dataset.act==="job"){const was=jobOf(r),to=was==="Open"?"Closed":"Open";b.disabled=true;
+      try{const x=await api({a:"job",token:teamTok(),id:r.id,job:to});if(x.err==="signin"){signedOut();return}
+        if(x.err==="unknown action"){toast("The projects sheet's script needs updating before jobs can be closed. The steps are in the thread.",1);b.disabled=false;return}
+        if(!x.ok)throw 0;r.job=to;drawRows();toast((to==="Closed"?"Closed “":"Reopened “")+(r.title||"project")+(to==="Closed"?"”. It's under Closed now.":"”. It's back under Open jobs."))}
+      catch(err){b.disabled=false;toast("Couldn't change it. Check the internet connection and try again.",1)}}
     else if(b.dataset.act==="rm"){if(rmArm!==r.id){rmArm=r.id;drawRows();setTimeout(()=>{if(rmArm===r.id){rmArm="";drawRows()}},4000);return}
       rmArm="";try{const x=await api({a:"delete",token:teamTok(),id:r.id});if(!x.ok)throw 0;ROWS=ROWS.filter(y=>y.id!==r.id);drawRows();toast("Removed “"+(r.title||"project")+"” from the list. The client's link still works.")}
       catch(err){toast("Couldn't remove it. Try again.",1)}}});
