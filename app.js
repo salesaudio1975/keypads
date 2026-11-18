@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). projects.html = the team page (projects list + make a project link; new.html forwards there).
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-18-26E";   // shown at the bottom of every page; bump with each release
+const VERSION="11-18-26F";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -31,6 +31,11 @@ const FG={alisse:null,
 const GROUPS=["alisse","pal","see","sun","pico"],GDEF={pal:"WH",see:"WH",sun:"WH",pico:"WH"};
 const TALIAS={"see-1rl":"see-1","see-2rl":"see-2"};   // early names
 const typeOf=k=>k&&k.type?TYPES.find(t=>t[0]===(TALIAS[k.type]||k.type))||null:null;
+// a multi-gang plate: k.gt lists each gang's type, left to right; k.type is gang 1, k.cols and k.labels run gang by gang
+const GANG_W=1.8125;   // inches from one gang to the next
+const gangsOf=k=>{if(!k||!Array.isArray(k.gt)||k.gt.length<2)return null;const ts=k.gt.map(id=>TYPES.find(t=>t[0]===(TALIAS[id]||id)));return ts.every(Boolean)?ts:null};
+const gangSide=(i,n)=>n===2?(i?"right":"left"):n===3?["left","middle","right"][i]:"gang "+(i+1);
+function gangCols(k){const gs=gangsOf(k);return gs?gs.flatMap(t=>t[4]):null}
 const famOf=k=>{const t=typeOf(k);return t?t[1]:"alisse"};
 const grpOf=k=>FAMS[famOf(k)].fg;
 const finList=g=>g==="alisse"?FIN:FG[g];
@@ -106,7 +111,8 @@ const layName=cols=>cols.join(" + ");
 function lum(h){const n=parseInt(h.slice(1),16),c=[n>>16,n>>8&255,n&255].map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});return .2126*c[0]+.7152*c[1]+.0722*c[2]}
 function tint(h,a){const n=parseInt(h.slice(1),16);return "#"+[n>>16,n>>8&255,n&255].map(v=>Math.max(0,Math.min(255,Math.round(v+a*255))).toString(16).padStart(2,"0")).join("")}
 function famPlate(k){
-  const t=typeOf(k),F=FAMS[t[1]],[W,H,X,Y,FW,FH,GAP,RLH]=F.g,lim=limitOf(k),bad=[];let idx=0;
+  const gs=gangsOf(k)||[typeOf(k)],t0=gs[0],F=FAMS[t0[1]],[W1,H,X,Y,FW,FH,GAP,RLH]=F.g,W=W1+(gs.length-1)*GANG_W,lim=limitOf(k),bad=[];let idx=0;
+  const keysFor=t=>{
   const lab=()=>{const raw=(k.labels[idx]||"").trim(),tx=kase(raw),ln=raw?fitLines(tx,lim):[];if(raw&&!ln)bad.push(raw);idx++;
     return `<span class="tx${raw&&!ln?" bad":""}">${!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(tx)}</span>`};
   const sl=t[6]&&t[6].sl;
@@ -115,9 +121,12 @@ function famPlate(k){
       h+=`<div class="key${chgB(k,idx)?" chg":""}"><span class="tx${raw&&!ln?" bad":""}">${!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(tx)}</span></div>`}
     if(t[5])h+=`<div class="key rl" style="flex:0 0 calc(var(--pw)*${RLH}/3.55)"><span>▽</span><span>△</span></div>`;
     return `<div class="kcol">${h}</div>`}).join("");
+  return cols};
+  const blocks=gs.map((t,gi)=>{const cols=keysFor(t);return `<div class="keys" style="left:${((X+gi*GANG_W)/W*100).toFixed(2)}%;top:${(Y/H*100).toFixed(2)}%;width:${(FW/W*100).toFixed(2)}%;height:${(FH/H*100).toFixed(2)}%">${cols}</div>`}).join("");
+  const t=t0;
   const g=F.fg,c=(finList(g).find(f=>f[0]===kFin(k))||finList(g)[0])[2],dk=lum(c)<.18;
   const vars=`--pf:linear-gradient(150deg,${tint(c,.05)},${c} 55%,${tint(c,.025)});--pedge:rgba(0,0,0,${dk?.35:.14});--kc:${tint(c,dk?.03:-.012)};--ink:${dk?"rgba(255,255,255,.85)":"rgba(0,0,0,.85)"};--pt:${+k.pt||F.pt};--z:${F.z||1};--gap:calc(var(--pw)*${GAP}/3.55)`;
-  return {html:`<div class="plate fam ${F.cls||t[1]}${dk?" dk":""}${t[6]&&t[6].hy?" hy":""}" style="width:calc(var(--pw)*${W}/3.55);aspect-ratio:${W}/${H};${vars}"><div class="keys" style="left:${(X/W*100).toFixed(2)}%;top:${(Y/H*100).toFixed(2)}%;width:${(FW/W*100).toFixed(2)}%;height:${(FH/H*100).toFixed(2)}%">${cols}</div></div>`,bad};
+  return {html:`<div class="plate fam ${F.cls||t[1]}${dk?" dk":""}${t[6]&&t[6].hy?" hy":""}" style="width:calc(var(--pw)*${W}/3.55);aspect-ratio:${W}/${H};${vars}">${blocks}</div>`,bad};
 }
 function plate(k){
   if(typeOf(k))return famPlate(k);
@@ -134,8 +143,8 @@ function plate(k){
 const floors=()=>[...new Set(D.kp.map(k=>k.floor||"No floor"))];
 const wallCls=k=>typeOf(k)?"famwall":`f-${kFin(k)} ${st.size==="12"?"pt12":""}`;
 const finName=(v,g="alisse")=>(finList(g).find(f=>f[0]===v)||[0,v])[1];
-const typeName=k=>{const t=typeOf(k);return t?t[2]:"Alisse "+layName(k.cols)};
-const tagOf=k=>{const t=typeOf(k),nb=k.cols.reduce((a,b)=>a+b,0);return (t?FAMS[t[1]].n+(t[6]&&t[6].hy?" hybrid":"")+" ":groups().length>1?"Alisse ":"")+nb+"-button"};
+const typeName=k=>{const gs=gangsOf(k);if(gs)return gs.length+"-gang: "+gs.map(t=>t[2]).join(" + ");const t=typeOf(k);return t?t[2]:"Alisse "+layName(k.cols)};
+const tagOf=k=>{const t=typeOf(k),nb=k.cols.reduce((a,b)=>a+b,0),gs=gangsOf(k);if(gs)return FAMS[t[1]].n+" "+gs.length+"-gang, "+nb+" buttons";return (t?FAMS[t[1]].n+(t[6]&&t[6].hy?" hybrid":"")+" ":groups().length>1?"Alisse ":"")+nb+"-button"};
 const groups=()=>{const s=new Set(D.kp.map(grpOf));if(!s.size)s.add("alisse");return GROUPS.filter(g=>s.has(g))};
 function chgBar(){if(!D.sent)return"";const ch=D.kp.filter(k=>kpChg(k).any),nb=D.kp.reduce((a,k)=>a+kpChg(k).btns.length,0),nn=D.kp.filter(k=>kpChg(k).note).length,gn=gone();
   if(!ch.length&&!gn.length){if(ONLY){ONLY=false;ls.set("kp:only",false)}return ""}
@@ -226,14 +235,15 @@ function openEd(i){cur=i;edFocus=-1;const k=D.kp[i];edSnap=clone(k);edKeep=false
   $("floorList").innerHTML=floors().map(f=>`<option value="${esc(f)}">`).join("");
   const sel=$("edLay"),ln=typeOf(k)?k.type:"a:"+layName(k.cols);
   if(![...sel.options].some(o=>o.value===ln))sel.insertAdjacentHTML("beforeend",`<option value="${ln}">Alisse ${layName(k.cols)}</option>`);
-  sel.value=ln;fillFin();buildInputs();edPreview();$("edMore").open=isOpen("edinfo");$("edNote").value=k.note||"";
+  sel.value=ln;fillFin();gangUi();buildInputs();edPreview();$("edMore").open=isOpen("edinfo");$("edNote").value=k.note||"";
   if(ed.showModal)ed.showModal();else ed.setAttribute("open","");
 }
 document.addEventListener("focusin",e=>{if(e.target.matches&&e.target.matches("#edCols input")){edFocus=+e.target.dataset.b;edMark()}});
-function buildInputs(){const k=D.kp[cur],t=typeOf(k);let idx=0;const nc=k.cols.length;
-  $("edCols").innerHTML=k.cols.map((cnt,ci)=>{let h=`<div><p class="colh">${(COLNAME[nc]||[])[ci]||"Column "+(ci+1)}</p>`;
+function buildInputs(){const k=D.kp[cur],t=typeOf(k),gs=gangsOf(k);let idx=0;const nc=k.cols.length;
+  const head=[];if(gs)gs.forEach((g,gi)=>g[4].forEach((c,j)=>head.push(gs.length===1?"":(gangSide(gi,gs.length)[0].toUpperCase()+gangSide(gi,gs.length).slice(1))+" keypad"+(g[4].length>1?(j?", right column":", left column"):"")+" (top to bottom)")));
+  $("edCols").innerHTML=k.cols.map((cnt,ci)=>{let h=`<div><p class="colh">${head[ci]||(COLNAME[nc]||[])[ci]||"Column "+(ci+1)}</p>`;
     for(let i=0;i<cnt;i++,idx++)h+=`<div class="bl"><span class="bn" aria-hidden="true">${idx+1}</span><input data-b="${idx}" value="${esc(k.labels[idx]||"")}" placeholder="Button ${idx+1} name (blank = no engraving)" autocomplete="off" aria-label="Button ${idx+1} name"><small data-m="${idx}"></small></div>`;
-    return h+"</div>"}).join("")+(t&&t[5]?`<p class="small">Plus raise/lower buttons at the bottom (not engraved).</p>`:"");
+    return h+"</div>"}).join("")+(t&&(gs?gs.some(g=>g[5]):t[5])?`<p class="small">Plus raise/lower buttons at the bottom (not engraved).</p>`:"");
   checkInputs();
 }
 function checkInputs(){const k=D.kp[cur];
@@ -258,11 +268,29 @@ $("edLoc").addEventListener("input",e=>{D.kp[cur].loc=e.target.value;changed()})
 $("edNote").addEventListener("input",e=>{const v=e.target.value.slice(0,1000);if(v.trim())D.kp[cur].note=v;else delete D.kp[cur].note;changed()});
 $("edFin").addEventListener("change",e=>{if(e.target.value)D.kp[cur].finish=e.target.value;else delete D.kp[cur].finish;changed()});
 $("edFloor").addEventListener("change",e=>{D.kp[cur].floor=e.target.value.trim()||"No floor";changed()});
-$("edLay").addEventListener("change",e=>{const k=D.kp[cur];setType(k,e.target.value);fillFin();buildInputs();changed()});
+$("edLay").addEventListener("change",e=>{const k=D.kp[cur];setType(k,e.target.value);fillFin();gangUi();buildInputs();changed()});
 function setType(k,v){
-  if(v.startsWith("a:")){delete k.type;k.cols=parseLayout(v.slice(2))}else{const t=TYPES.find(x=>x[0]===v);if(!t)return;k.type=v;k.cols=t[4].slice()}
+  const old=k.labels.slice(),gs=gangsOf(k);
+  if(v.startsWith("a:")){delete k.type;delete k.gt;k.cols=parseLayout(v.slice(2))}else{const t=TYPES.find(x=>x[0]===v);if(!t)return;k.type=v;
+    if(gs){k.gt=k.gt.map((g,i)=>i===0||gs[i][1]!==t[1]?v:g);setGangs(k,k.gt,old);return}k.cols=t[4].slice()}
   const n=k.cols.reduce((a,b)=>a+b,0);k.labels=k.labels.slice(0,n);while(k.labels.length<n)k.labels.push("");
   if(k.finish&&!finOk(grpOf(k),k.finish))delete k.finish}
+// re-lay the buttons gang by gang, keeping each gang's names where it can
+function setGangs(k,gt,old){const before=gangsOf(k)||[typeOf(k)],per=[];let i=0;old=old||k.labels;
+  before.forEach(t=>{const n=t?t[4].reduce((a,b)=>a+b,0):k.cols.reduce((a,b)=>a+b,0);per.push(old.slice(i,i+n));i+=n});
+  if(gt.length>1)k.gt=gt.slice();else delete k.gt;k.type=gt[0];
+  const ts=gt.map(id=>TYPES.find(t=>t[0]===id));k.cols=ts.flatMap(t=>t[4]);k.labels=[];
+  ts.forEach((t,gi)=>{const n=t[4].reduce((a,b)=>a+b,0),l=(per[gi]||[]).slice(0,n);while(l.length<n)l.push("");k.labels.push(...l)});
+  delete k.hpos;if(k.finish&&!finOk(grpOf(k),k.finish))delete k.finish}
+function gangUi(){const k=D.kp[cur],t=typeOf(k),box=$("edGangs");if(!box)return;
+  if(!t){box.innerHTML="";return}
+  const gs=gangsOf(k)||[t],n=gs.length,same=TYPES.filter(x=>x[1]===t[1]);
+  box.innerHTML=(n>1?gs.slice(1).map((g,i)=>`<label class="f">Gang ${i+2} (${gangSide(i+1,n)})<select data-gang="${i+1}">${same.map(x=>`<option value="${x[0]}"${x[0]===g[0]?" selected":""}>${esc(x[2])}${x[3]?" · "+x[3]:""}</option>`).join("")}</select></label>`).join(""):"")+
+    `<div class="gbtns">${n<4?`<button type="button" class="btnx" data-gadd>+ Add a gang</button>`:""}${n>1?`<button type="button" class="btnx" data-grem>Remove the ${gangSide(n-1,n)} gang</button>`:""}<span class="small">${n>1?n+" keypads on one wallplate. Keypad type above is the left one.":"For keypads side by side on one wallplate."}</span></div>`}
+if($("edGangs"))$("edGangs").addEventListener("click",e=>{const k=D.kp[cur];if(!k)return;const gt=k.gt&&k.gt.length>1?k.gt.slice():[k.type];
+  if(e.target.closest("[data-gadd]"))gt.push(gt[gt.length-1]);else if(e.target.closest("[data-grem]"))gt.pop();else return;
+  setGangs(k,gt);gangUi();buildInputs();changed()});
+if($("edGangs"))$("edGangs").addEventListener("change",e=>{const s=e.target.closest("[data-gang]");if(!s)return;const k=D.kp[cur],gt=k.gt.slice();gt[+s.dataset.gang]=s.value;setGangs(k,gt);buildInputs();changed()});
 let delArm=0;
 $("edDel").addEventListener("click",()=>{const b=$("edDel");
   if(Date.now()-delArm>4000){delArm=Date.now();b.textContent="Tap again to delete";setTimeout(()=>{b.innerHTML=DELH},4000);return}
@@ -311,10 +339,10 @@ function parseTable(text){
     if(/^keypad$/i.test(r[0])||/^project:?$/i.test(r[0])||/^pick a layout/i.test(r[0]))continue;
     if(!r.some(Boolean))continue;
     const labels=r.slice(4,13);while(labels.length&&!labels[labels.length-1])labels.pop();
-    const ty=findType(r[3]);
-    let cols=ty?ty[4].slice():parseLayout(String(r[3]||"").replace(/^alisse\s*/i,""));if(!cols)cols=guessLayout(labels.length);
+    let ty=findType(r[3]);const gp=ty?null:String(r[3]||"").split(/\s+\+\s+/).map(findType);const gt=gp&&gp.length>1&&gp.every(Boolean)&&gp.every(t=>t[1]===gp[0][1])?gp:null;if(gt)ty=gt[0];
+    let cols=gt?gt.flatMap(t=>t[4]):ty?ty[4].slice():parseLayout(String(r[3]||"").replace(/^alisse\s*/i,""));if(!cols)cols=guessLayout(labels.length);
     const n=cols.reduce((a,b)=>a+b,0);const lb=labels.slice(0,n);while(lb.length<n)lb.push("");
-    const k={n:r[0]||String(kp.length+1),floor:r[1]||"First",loc:r[2]||"",cols,labels:lb};if(ty)k.type=ty[0];
+    const k={n:r[0]||String(kp.length+1),floor:r[1]||"First",loc:r[2]||"",cols,labels:lb};if(ty)k.type=ty[0];if(gt)k.gt=gt.map(t=>t[0]);
     const fm=findFin(grpOf(k),r[13]);if(fm)k.finish=fm;if(/^(yes|y|x|✓|approved|true)$/i.test(r[14]||""))k.ok=1;
     kp.push(k);
   }
@@ -338,11 +366,19 @@ function typeForModel(mt,model){const e=typeByModel(model);if(e)return e;if(!mt)
   const same=TYPES.filter(t=>t[1]===mt.fam);
   return same.find(t=>sum(t)===mt.n&&!!t[5]===!!mt.rl)||same.find(t=>sum(t)===mt.n)||same.find(t=>sum(t)>=mt.n)||same[same.length-1]||null}
 function reportToKp(rs){
-  return rs.map((r,i)=>{const t=typeForModel(r.mt,r.model);const k={n:String(i+1),floor:r.floor||"Main",loc:r.loc||"",cols:t?t[4].slice():guessLayout(r.labels.length),labels:[]};
+  // gangs of one wallplate come in one after another: join them into one keypad
+  const plates=[];rs.forEach(r=>{const last=plates[plates.length-1];if(r.gang>1&&last&&last.gangs)last.gangs.push(r);else plates.push(r.gang===1?{...r,gangs:[r]}:r)});
+  return plates.flatMap((r,i)=>{if(r.gangs&&r.gangs.length>1){const ts=r.gangs.map(g=>typeForModel(g.mt,g.model));
+      if(ts.every(Boolean)&&ts.every(t=>t[1]===ts[0][1])){const k={n:String(i+1),floor:r.floor||"Main",loc:String(r.loc||"").replace(/\s*\((left|right|middle|\d+ of \d+)\)$/,""),cols:ts.flatMap(t=>t[4]),labels:[],type:ts[0][0],gt:ts.map(t=>t[0])};
+        r.gangs.forEach((g,gi)=>{const n=ts[gi][4].reduce((a,b)=>a+b,0),l=g.labels.slice(0,n);while(l.length<n)l.push("");k.labels.push(...l)});
+        const gp=grpOf(k);let f=findFin(gp,r.color);if(f)k.finish=f;if(+r.pt>=6&&+r.pt<=20)k.pt=+r.pt;if(r.gangs.some(g=>g.ocr))k.ocr=1;return [k]}
+      return r.gangs.map(g=>one(g,i))}   // different families can't share a plate: keep them apart
+    return [one(r,i)]}).map((k,i)=>(k.n=String(i+1),k));
+  function one(r,i){const t=typeForModel(r.mt,r.model);const k={n:String(i+1),floor:r.floor||"Main",loc:r.loc||"",cols:t?t[4].slice():guessLayout(r.labels.length),labels:[]};
     if(t)k.type=t[0];const n=k.cols.reduce((a,b)=>a+b,0);k.labels=r.labels.slice(0,n);while(k.labels.length<n)k.labels.push("");
     const g=grpOf(k);let f=findFin(g,r.color);
     if(!f){const code=(String(r.model).match(/-([A-Z]{2,3})(-[A-Z0-9]+)?$/)||[])[1];if(code)f=findFin(g,code)||findFin(g,code.slice(-2))}
-    if(f)k.finish=f;if(+r.pt>=6&&+r.pt<=20)k.pt=+r.pt;if(r.ocr)k.ocr=1;return k});
+    if(f)k.finish=f;if(+r.pt>=6&&+r.pt<=20)k.pt=+r.pt;if(r.ocr)k.ocr=1;return k}
 }
 // most common finish in each family becomes the project finish; keypads that match it drop their own
 function adoptFinishes(){for(const g of GROUPS){const ks=D.kp.filter(k=>grpOf(k)===g&&k.finish);if(!ks.length)continue;
@@ -466,7 +502,7 @@ async function copy(t,what){try{await navigator.clipboard.writeText(t);toast((wh
 $("csvBtn").addEventListener("click",()=>{
   const q=v=>/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':String(v);
   const rows=[["Keypad","Floor","Location","Layout",...Array.from({length:9},(_,i)=>"Button "+(i+1)),"Finish (if different)","Approved","Note"]];
-  D.kp.forEach(k=>rows.push([k.n,k.floor,k.loc,typeOf(k)?typeOf(k)[2]:layName(k.cols),...Array.from({length:9},(_,i)=>k.labels[i]||""),k.finish&&finOk(grpOf(k),k.finish)?finName(k.finish,grpOf(k)):"",k.ok?"Yes":"",T(k.note)]));
+  D.kp.forEach(k=>rows.push([k.n,k.floor,k.loc,gangsOf(k)?gangsOf(k).map(t=>t[2]).join(" + "):typeOf(k)?typeOf(k)[2]:layName(k.cols),...Array.from({length:9},(_,i)=>k.labels[i]||""),k.finish&&finOk(grpOf(k),k.finish)?finName(k.finish,grpOf(k)):"",k.ok?"Yes":"",T(k.note)]));
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([rows.map(r=>r.map(q).join(",")).join("\r\n")],{type:"text/csv"}));
   a.download=(D.title||"keypads").replace(/[^\w -]/g,"")+" keypads.csv";document.body.appendChild(a);a.click();a.remove();
 });
@@ -475,7 +511,7 @@ $("printBtn").addEventListener("click",()=>window.print());
 function keFile(){const parts=k=>{const p=String(k.loc||"").split(/\s+·\s+/);return p.length>1?[p[0],p.slice(1).join(" · ")]:["",String(k.loc||"")]};
   return {kind:"keypad import",version:1,job:D.title.trim()||"Keypads",made:new Date().toISOString(),made_by:"Keypads site "+VERSION,
     keypads:D.kp.map(k=>{const [room,name]=parts(k),hp=Array.isArray(k.hpos)&&k.hpos.length===k.labels.length?k.hpos:null;
-      return {hid:k.hid||"",n:String(k.n),floor:k.floor||"",loc:k.loc||"",room,name,note:T(k.note),type:typeOf(k)?typeOf(k)[2]:"Alisse "+layName(k.cols),approved:!!k.ok,
+      return {hid:k.hid||"",n:String(k.n),floor:k.floor||"",loc:k.loc||"",room,name,note:T(k.note),type:typeName(k),approved:!!k.ok,
         buttons:k.labels.map((t,i)=>({pos:hp?hp[i]:i+1,text:String(t||"")}))}})}}
 if($("keBtn"))$("keBtn").addEventListener("click",()=>{if(!D.kp.length){toast("There are no keypads to export yet.",1);return}
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(keFile(),null,1)],{type:"application/json"}));
