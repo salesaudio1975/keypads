@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). projects.html = the team page (projects list + make a project link; new.html forwards there).
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-18-26A";   // shown at the bottom of every page; bump with each release
+const VERSION="11-18-26B";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},

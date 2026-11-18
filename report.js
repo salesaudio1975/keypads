@@ -44,9 +44,14 @@ function splitLoc(p){const parts=p.split(">").map(s=>s.trim()).filter(Boolean);
 function dedupe(a){return a.filter((s,i)=>s!==a[i-1])}
 function parsePage(items){
   const L=lines(items);
-  const hi=L.findIndex(l=>/^Device Locations with Identical Engraving/i.test(l.t));if(hi<0)return [];
-  const wi=L.findIndex((l,i)=>i>hi&&/^Wallplate:/.test(l.t));
-  const locs=L.slice(hi+1,wi<0?hi+2:wi).map(l=>l.t).filter(t=>t.includes(">")||t.length);
+  const hi=L.findIndex(l=>/^Device Locations with Identical Engraving/i.test(l.t));let wi,locs;
+  if(hi>=0){wi=L.findIndex((l,i)=>i>hi&&/^Wallplate:/.test(l.t));
+    locs=L.slice(hi+1,wi<0?hi+2:wi).map(l=>l.t).filter(t=>t.includes(">")||t.length)}
+  else{// one keypad per page: "Area Name Basement\009 Guest Bathroom" and "Device Name: Entrance"
+    const an=items.find(i=>/^Area Name:?$/i.test(i.s.trim()));if(!an)return [];
+    const area=after(items,an.s.trim()),dev=after(items,"Device Name:");
+    wi=L.findIndex(l=>/^Wallplate:/.test(l.t));
+    locs=[area.split(/\s*[\\>]\s*/).concat(dev).filter(Boolean).join(" > ")]}
   const color=after(items,"Color:");
   const be=items.find(i=>i.s.trim()==="Button Engraving");   // the button engraving column's font size (not the faceplate's)
   const fsz=be?items.find(i=>i.s.trim()==="Font Size:"&&Math.abs(i.x-be.x)<20):null;
@@ -74,7 +79,13 @@ function group(ls,want){ // join lines into buttons: big vertical gaps split but
   // too many buttons for the model: merge across the smallest gaps
   while(want&&btn.length>want){let bi=1,bg=1e9;for(let i=1;i<btn.length;i++){const g=btn[i-1][btn[i-1].length-1].y-btn[i][0].y;if(g<bg){bg=g;bi=i}}
     btn[bi-1]=btn[bi-1].concat(btn[bi]);btn.splice(bi,1)}
-  return btn.map(b=>b.map(l=>l.t).join(" "));
+  const out=btn.map(b=>b.map(l=>l.t).join(" "));
+  // fewer names than buttons: a gap of two button heights means a blank button in between
+  if(want&&btn.length>=2&&btn.length<want){const tops=btn.map(b=>b[0].y),gaps=tops.slice(1).map((y,i)=>tops[i]-y),pitch=Math.min(...gaps);
+    const add=gaps.map(g=>Math.round(g/pitch)-1);
+    if(pitch>0&&add.some(n=>n>0)&&btn.length+add.reduce((a,b)=>a+b,0)<=want&&gaps.every((g,i)=>Math.abs(g-(add[i]+1)*pitch)<pitch*0.2)){
+      const res=[out[0]];add.forEach((n,i)=>{for(let j=0;j<n;j++)res.push("");res.push(out[i+1])});return res}}
+  return out;
 }
 function parseReport(pages){const out=[];pages.forEach((p,i)=>out.push(...parsePage(p).map(r=>({...r,pg:i}))));return out}
 root.parseReport=parseReport;root.modelType=modelType;
