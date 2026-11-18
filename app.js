@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). projects.html = the team page (projects list + make a project link; new.html forwards there).
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-18-26B";   // shown at the bottom of every page; bump with each release
+const VERSION="11-18-26C";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -459,7 +459,7 @@ async function openSend(approved){
 $("sendBtn").addEventListener("click",()=>openSend(false));
 // the moment every keypad is approved, offer the approval email (client only)
 function maybeApproved(wasAll){const all=D.kp.length&&D.kp.every(k=>k.ok);if(MODE==="client"&&all&&!wasAll)setTimeout(()=>openSend(true),350)}
-async function copy(t){try{await navigator.clipboard.writeText(t);toast("Link copied")}catch(e){window.prompt("Copy this link:",t)}}
+async function copy(t,what){try{await navigator.clipboard.writeText(t);toast((what||"Link")+" copied")}catch(e){window.prompt("Copy this:",t)}}
 
 // ---------- CSV, print, reset ----------
 $("csvBtn").addEventListener("click",()=>{
@@ -641,6 +641,7 @@ function startBuilder(){
     const blank=kp.filter(k=>k.labels.every(l=>!l.trim())).length;
     const ocr=kp.filter(k=>k.ocr).length;kp.forEach(k=>delete k.ocr);save();
     toast(kp.length+" keypads imported"+(ocr?". Button names on "+ocr+" were read from Lutron's pictures, so check the spelling.":"")+(blank?". "+blank+" came in without button names, so tap those to type them.":""))});
+  $("md").addEventListener("click",e=>{const b=e.target.closest("[data-cp]");if(!b)return;const el=$(b.dataset.cp);el.select();copy(el.value,b.dataset.what)});
   $("bMake").addEventListener("click",async()=>{
     const err=[];if(!D.title.trim())err.push("a project name");if(!/^\S+@\S+\.\S+$/.test(B.client))err.push("the client's email");if(!D.kp.length)err.push("at least one keypad");
     if(err.length){$("bErr").textContent="Add "+err.join(", ")+" first.";$("bSetup").open=true;return}
@@ -651,7 +652,8 @@ function startBuilder(){
     $("bLink").textContent=url;$("bOut").hidden=false;$("bOut").scrollIntoView({behavior:"smooth",block:"nearest"});
     $("bCopy").onclick=()=>copy(url);
     const body=`Here are your keypads for ${D.title}. Open the link, enter this email address (${B.client}), and tap any keypad to change the button names. When you're done, tap "Send changes".\n\n${url}\n`;
-    $("bMail").href="mailto:"+encodeURIComponent(B.client)+"?subject="+encodeURIComponent(D.title+" keypads")+"&body="+encodeURIComponent(body);
+    // a popup with the email to copy, not the mail app
+    $("bMail").onclick=()=>{$("mdTo").value=B.client;$("mdSub").value=D.title+" keypads";$("mdBody").value=body;$("md").showModal()};
     $("bOpen").href=url;
     listSave(url,B.client,"Link sent");
   });

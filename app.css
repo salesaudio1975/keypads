@@ -376,3 +376,11 @@ body.plv .top .actions,body.plv #subline{display:none}
 .ednote{display:flex;flex-direction:column;gap:6px;margin-top:12px;font-weight:600;font-size:13px}
 .ednote textarea{font:inherit;font-weight:400;font-size:15px;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px;resize:vertical;min-height:52px}
 @media (prefers-color-scheme:dark){.kp.card .chgstrip,.chgbar{background:#3a2a12;color:#ffd9a6;border-color:#5a3d14}.kp.card .notestrip{background:#14293a;color:#cfe6f7;border-color:#244a66}}
+
+#md .mrow{display:flex;flex-direction:column;gap:6px}
+#md label{font-size:12px;font-weight:600;color:var(--muted)}
+#md .mline{display:flex;gap:8px}
+#md .mline input{flex:1;min-width:0}
+#md input,#md textarea{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:inherit;box-sizing:border-box;width:100%}
+#md textarea{resize:vertical;line-height:1.45}
+#md .actions{margin:0}
