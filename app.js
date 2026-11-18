@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). projects.html = the team page (projects list + make a project link; new.html forwards there).
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-18-26F";   // shown at the bottom of every page; bump with each release
+const VERSION="11-18-26G";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -690,9 +690,37 @@ function startBuilder(){
     const url=await makeLink(B.client);
     $("bLink").textContent=url;$("bOut").hidden=false;$("bOut").scrollIntoView({behavior:"smooth",block:"nearest"});
     $("bCopy").onclick=()=>copy(url);
-    const body=`Here are your keypads for ${D.title}. Open the link, enter this email address (${B.client}), and tap any keypad to change the button names. When you're done, tap "Send changes".\n\n${url}\n`;
+    // Jeff, Nov 18: full and short versions, no project name
+    const MAIL={full:["Your keypad engraving: please review",`Hi,
+
+Here are your keypads. Each one shows what will be engraved on its buttons. Please look them over before we order, since engraving can't be changed once it's made.
+
+How it works:
+1. Open the link below and enter this email address (${B.client}).
+2. Tap any keypad to change a button name. The page tells you if a name is too long to engrave.
+3. Use the note box on a keypad for anything else, like what a button should control or a programming change.
+4. Tap the ✓ on each keypad when it looks right.
+5. When you're done, tap "Send changes" to send everything back to us.
+
+You can come back to the link any time. Your changes stay on this device until you send them.
+
+${url}
+
+Questions? Just reply to this email.
+Audio Breakthroughs`],
+      short:["Please approve your keypad buttons",`Hi,
+
+Before we order your engraved keypads, please check the button names. Open the link, enter this email address (${B.client}), and tap any keypad to change its buttons or leave us a note. Check off each keypad when it's right, then tap "Send changes."
+
+${url}
+
+Thanks,
+Audio Breakthroughs`]};
+    const fillMail=()=>{const v=ls.get("kp:mailv")==="short"?"short":"full";$("mdSub").value=MAIL[v][0];$("mdBody").value=MAIL[v][1];
+      document.querySelectorAll("#mdVer button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===v))};
+    $("mdVer").onclick=e=>{const b=e.target.closest("button[data-v]");if(!b)return;ls.set("kp:mailv",b.dataset.v);fillMail()};
     // a popup with the email to copy, not the mail app
-    $("bMail").onclick=()=>{$("mdTo").value=B.client;$("mdSub").value=D.title+" keypads";$("mdBody").value=body;$("md").showModal()};
+    $("bMail").onclick=()=>{$("mdTo").value=B.client;fillMail();$("md").showModal()};
     $("bOpen").href=url;
     listSave(url,B.client,"Link sent");
   });
