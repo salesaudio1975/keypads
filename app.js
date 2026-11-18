@@ -1,8 +1,8 @@
 // Alisse keypad mockups. Each project lives in its link (#e=...), encrypted with the client's email.
-// index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
+// index.html = client view (unlock with email, edit, send changes). projects.html = the team page (projects list + make a project link; new.html forwards there).
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26V";   // shown at the bottom of every page; bump with each release
+const VERSION="11-17-26W";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -497,7 +497,7 @@ async function startClient(){
 }
 window.addEventListener("hashchange",()=>{if(MODE==="client")location.reload()});
 
-// ---------- builder (new.html) ----------
+// ---------- builder (projects.html) ----------
 function clearProject(){D={id:"",title:"",replyTo:"",rev:0,kp:[]};B.client="";ls.del("kpBuilder");builderFill();$("bPaste").value="";initBar();render();setView("edit");$("bTitle").focus();
   toast("New project started. Add a name, the client's email and the keypads.")}
 // ---- all projects (reads the shared Google Sheet) ----
