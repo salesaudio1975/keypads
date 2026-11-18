@@ -58,18 +58,24 @@ function parsePage(items){
   const pt=fsz?parseFloat(after([fsz,...items.filter(i=>i!==fsz&&i.s.trim()!=="Font Size:")],"Font Size:")):NaN;
   const bb=L.findIndex(l=>/^Backbox Size:|Font Size:/.test(l.t));
   let lowest=Math.max(wi,bb);L.forEach((l,i)=>{if(i>wi&&/Font Size:|Backbox Size:/.test(l.t))lowest=Math.max(lowest,i)});
-  const mi=L.findIndex((l,i)=>i>lowest&&l.items.length===1&&MODEL.test(l.t));
-  const model=mi>=0?L[mi].t:"";
-  const body=L.filter((l,i)=>i>(mi>=0?mi:lowest)&&!/^Please see|^File Name:|^Sheet:|^LUTRON$/i.test(l.t)&&!/^Sheet:/.test(l.t)&&l.y>40);
-  // columns (2-column keypads): split by x
-  const xs=[...new Set(body.map(l=>Math.round(l.x)))].sort((a,b)=>a-b),cols=[];
-  for(const l of body){let c=cols.find(c=>Math.abs(c.x-l.x)<40);if(!c){c={x:l.x,ls:[]};cols.push(c)}c.ls.push(l)}
-  cols.sort((a,b)=>a.x-b.x);
-  const mt=modelType(model)||{fam:"see",n:Math.max(1,body.length),rl:0};
-  const perCol=mt.cols||[mt.n];
-  const labels=[];
-  cols.forEach((c,ci)=>{const want=perCol[ci]||perCol[perCol.length-1];labels.push(...group(c.ls,want))});
-  return locs.map(p=>({...splitLoc(p),model,color,pt,mt:mt&&{...mt},labels:labels.slice()}));
+  // the model line: one model, or one per gang on a multi-gang wallplate ("PBT-4W-WH-E   PBT-4W-WH-E")
+  const mi=L.findIndex((l,i)=>i>lowest&&l.items.every(it=>MODEL.test(it.s.trim())));
+  const FOOT=/^Please see|^File Name:|^Sheet:|^LUTRON$/i;
+  if(mi<0)return locs.map(p=>({...splitLoc(p),model:"",color,pt,mt:{fam:"see",n:1,rl:0},labels:[]}));
+  const my=L[mi].y,models=items.filter(it=>Math.abs(it.y-my)<2&&MODEL.test(it.s.trim())).sort((a,b)=>a.x-b.x);
+  const below=items.filter(it=>it.y<my-2&&it.y>40&&it.s.trim()&&!FOOT.test(it.s.trim()));
+  const gangs=models.map((m,gi)=>{const lo=gi?(models[gi-1].x+models[gi-1].w+m.x)/2:-1e9,nx=models[gi+1],hi=nx?(m.x+m.w+nx.x)/2:1e9;
+    const its=below.filter(it=>it.x>=lo&&it.x<hi);const model=m.s.trim();
+    const body=lines(its).filter(l=>!FOOT.test(l.t));
+    const cols=[];for(const l of body){let c=cols.find(c=>Math.abs(c.x-l.x)<40);if(!c){c={x:l.x,ls:[]};cols.push(c)}c.ls.push(l)}
+    cols.sort((a,b)=>a.x-b.x);
+    const mt=modelType(model)||{fam:"see",n:Math.max(1,body.length),rl:0};
+    const perCol=mt.cols||[mt.n],labels=[];
+    cols.forEach((c,ci)=>{const want=perCol[ci]||perCol[perCol.length-1];labels.push(...group(c.ls,want))});
+    return{model,mt,labels}});
+  const G=gangs.length,side=i=>G===2?(i?"right":"left"):(i+1)+" of "+G;
+  return locs.flatMap(p=>gangs.map((g,gi)=>{const r={...splitLoc(p),model:g.model,color,pt,mt:{...g.mt},labels:g.labels.slice()};
+    if(G>1){r.loc=(r.loc?r.loc+" ":"")+"("+side(gi)+")";r.gang=gi+1;r.gangs=G}return r}));
 }
 function group(ls,want){ // join lines into buttons: big vertical gaps split buttons
   ls=ls.slice().sort((a,b)=>b.y-a.y);if(!ls.length)return [];
