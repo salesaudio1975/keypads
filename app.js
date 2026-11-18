@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). new.html = make a new project link.
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-17-26U";   // shown at the bottom of every page; bump with each release
+const VERSION="11-17-26V";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -242,7 +242,7 @@ let delArm=0;
 $("edDel").addEventListener("click",()=>{const b=$("edDel");
   if(Date.now()-delArm>4000){delArm=Date.now();b.textContent="Tap again to delete";setTimeout(()=>{b.innerHTML=DELH},4000);return}
   delArm=0;b.innerHTML=DELH;const k=D.kp[cur];D.kp.splice(cur,1);edKeep=true;ed.close();save();render();toast("Keypad "+k.n+" deleted")});
-$("edDup").addEventListener("click",()=>{const k=clone(D.kp[cur]);delete k.ok;k.n=nextN();D.kp.splice(cur+1,0,k);save();render();openEd(cur+1);toast("Copied as keypad "+k.n)});
+$("edDup").addEventListener("click",()=>{const k=clone(D.kp[cur]);delete k.ok;delete k.hid;delete k.hpos;k.n=nextN();D.kp.splice(cur+1,0,k);save();render();openEd(cur+1);toast("Copied as keypad "+k.n)});
 $("edCancel").addEventListener("click",()=>ed.close("cancel"));
 ed.addEventListener("close",()=>{
   if(cur>=0&&edSnap&&!edKeep&&ed.returnValue!=="done"&&JSON.stringify(D.kp[cur])!==JSON.stringify(edSnap)){D.kp[cur]=edSnap;save();render();toast("Changes canceled")}
@@ -326,7 +326,7 @@ function adoptFinishes(){for(const g of GROUPS){const ks=D.kp.filter(k=>grpOf(k)
 function labelsToKp(j){
   const FM={palladiom:"pal",sunnata:"sun",pico:"pico",seetouch:"see",alisse:"alisse"};
   return (j.keypads||[]).map((x,i)=>{
-    const bs=(x.buttons||[]).slice().sort((a,b)=>(a.pos||0)-(b.pos||0)).map(b=>String(b.text||"").replace(/\s*\n\s*/g," ").trim());
+    const sb=(x.buttons||[]).slice().sort((a,b)=>(a.pos||0)-(b.pos||0)),bs=sb.map(b=>String(b.text||"").replace(/\s*\n\s*/g," ").trim());
     const sq=/-S-|square/i.test(String(x.model||""));let fam=FM[String(x.family||"").toLowerCase()]||null;
     let mt=window.modelType?window.modelType(x.model):null;if(fam==="pal"&&sq)fam="palsq";
     if(!mt||(fam&&mt.fam.replace("sq","")!==fam.replace("sq","")))mt={fam:fam||"see",n:bs.length,rl:!!x.raise_lower};
@@ -334,6 +334,8 @@ function labelsToKp(j){
     const k={n:String(i+1),floor:x.floor||"Main",loc:[x.room,x.name].filter(Boolean).filter((v,i,a)=>v!==a[i-1]).join(" · "),cols:[],labels:[]};
     if(mt.fam==="alisse"||fam==="alisse"){k.cols=guessLayout(bs.length)}else{const t=typeForModel(mt,x.model);if(t){k.type=t[0];k.cols=t[4].slice()}else k.cols=guessLayout(bs.length)}
     const n=k.cols.reduce((a,b)=>a+b,0);k.labels=bs.slice(0,n);while(k.labels.length<n)k.labels.push("");
+    // the Keypad Editor's keypad id and button numbers, so "Export for Keypad Editor" lands on the same keypad and buttons
+    if(x.id!=null&&x.id!==""){k.hid=String(x.id);if(bs.length===n)k.hpos=sb.map((b,i)=>+b.pos||i+1)}
     const f=findFin(grpOf(k),x.finish_code)||findFin(grpOf(k),(String(x.faceplate||x.model||"").match(/-([A-Z]{2,3})$/)||[])[1]);if(f)k.finish=f;
     return k});
 }
@@ -435,6 +437,16 @@ $("csvBtn").addEventListener("click",()=>{
   a.download=(D.title||"keypads").replace(/[^\w -]/g,"")+" keypads.csv";document.body.appendChild(a);a.click();a.remove();
 });
 $("printBtn").addEventListener("click",()=>window.print());
+// the file the Keypad Editor's "Import keypads..." reads (Jeff, Nov 17: "export file and then in builder import file")
+function keFile(){const parts=k=>{const p=String(k.loc||"").split(/\s+·\s+/);return p.length>1?[p[0],p.slice(1).join(" · ")]:["",String(k.loc||"")]};
+  return {kind:"keypad import",version:1,job:D.title.trim()||"Keypads",made:new Date().toISOString(),made_by:"Keypads site "+VERSION,
+    keypads:D.kp.map(k=>{const [room,name]=parts(k),hp=Array.isArray(k.hpos)&&k.hpos.length===k.labels.length?k.hpos:null;
+      return {hid:k.hid||"",n:String(k.n),floor:k.floor||"",loc:k.loc||"",room,name,type:typeOf(k)?typeOf(k)[2]:"Alisse "+layName(k.cols),approved:!!k.ok,
+        buttons:k.labels.map((t,i)=>({pos:hp?hp[i]:i+1,text:String(t||"")}))}})}}
+if($("keBtn"))$("keBtn").addEventListener("click",()=>{if(!D.kp.length){toast("There are no keypads to export yet.",1);return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(keFile(),null,1)],{type:"application/json"}));
+  a.download=(D.title.trim()||"Keypads").replace(/[^\w -]/g,"")+" keypads for Keypad Editor.json";document.body.appendChild(a);a.click();a.remove();
+  toast("Saved. In the Keypad Editor, open the .hw and press Import keypads.")});
 let resetArm=0;$("resetBtn").addEventListener("click",e=>{const b=e.currentTarget;
   const lab=MODE==="builder"?"Start new project":"Undo all my changes";
   if(Date.now()-resetArm>4000){resetArm=Date.now();b.textContent=MODE==="builder"?"Tap again to clear this project":"Tap again to undo everything";setTimeout(()=>b.textContent=lab,4000);return}
