@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). projects.html = the team page (projects list + make a project link; new.html forwards there).
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-18-26D";   // shown at the bottom of every page; bump with each release
+const VERSION="11-18-26E";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -532,7 +532,7 @@ async function startClient(){
 window.addEventListener("hashchange",()=>{if(MODE==="client")location.reload()});
 
 // ---------- builder (projects.html) ----------
-function clearProject(){D={id:"",title:"",replyTo:"",rev:0,kp:[]};B.client="";ls.del("kpBuilder");builderFill();$("bPaste").value="";initBar();render();setView("edit");$("bTitle").focus();
+function clearProject(){D={id:"",title:"",replyTo:"",rev:0,kp:[]};B.client="";B.reply="";ls.del("kpBuilder");builderFill();$("bPaste").value="";try{$("bFile").value=""}catch(e){};$("bOut").hidden=true;$("bErr").textContent="";$("bSetup").open=true;initBar();render();setView("edit");$("bTitle").focus();
   toast("New project started. Add a name, the client's email and the keypads.")}
 // ---- all projects (reads the shared Google Sheet) ----
 let ROWS=null,openArm="",rmArm="",JOB=ls.get("kp:job")==="Closed"?"Closed":"Open";
@@ -621,10 +621,12 @@ function startBuilder(){
   $("sendBtn").hidden=true;$("resetBtn").textContent="Start new project";
   $("builder").innerHTML=$("builderTpl").innerHTML;
   builderFill();
-  let newArm=0;$("bNew").addEventListener("click",()=>{const b=$("bNew");
-    if(!D.kp.length&&!D.title.trim()){$("bTitle").focus();return}
-    if(Date.now()-newArm>4000){newArm=Date.now();b.textContent="Tap again to clear "+(D.title.trim()||"this project");b.classList.add("danger");setTimeout(()=>{b.textContent="+ Start new project";b.classList.remove("danger")},4000);return}
-    newArm=0;b.textContent="+ Start new project";b.classList.remove("danger");clearProject()});
+  // "+ Start new project" in setup and "Clear / new project" at the top: tap twice to wipe the name, email and keypads
+  const newBtn=(id,lab)=>{let arm=0,tm=0;$(id).addEventListener("click",()=>{const b=$(id);
+    if(!D.kp.length&&!D.title.trim()&&!B.client){$("bSetup").open=true;$("bTitle").focus();return}
+    if(Date.now()-arm>4000){arm=Date.now();b.textContent="Tap again to clear "+(D.title.trim()||"this project");b.classList.add("danger");clearTimeout(tm);tm=setTimeout(()=>{b.textContent=lab;b.classList.remove("danger")},4000);return}
+    arm=0;clearTimeout(tm);b.textContent=lab;b.classList.remove("danger");clearProject();window.scrollTo({top:0})})};
+  newBtn("bNew","+ Start new project");newBtn("topNew","Clear / new project");
   $("bTitle").addEventListener("input",e=>{D.title=e.target.value;save();render()});
   $("bClient").addEventListener("input",e=>{B.client=e.target.value.trim();save()});
   $("bImport").addEventListener("click",()=>{const kp=parseTable($("bPaste").value);
