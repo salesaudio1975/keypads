@@ -36,7 +36,9 @@ function modelType(m){
     return{fam:"see",n:5,rl:1}}
   return null;
 }
-const FLOORISH=/^(apartment|apt\.?|unit|suite|penthouse|ph\b|residence|building|bldg|wing|guest house|pool house|townhouse|basement|cellar|lower level|ground|main|first|second|third|fourth|attic|roof|garage|\d+(st|nd|rd|th)?\s*(fl|floor|level)\b|level\s*\d|floor\s*\d|.*\bfloor\b|.*\blevel\b)/i;
+const FLOORISH=/^(apartment|apt\.?|unit|suite|penthouse|ph\b|residence|building|bldg|wing|guest house|pool house|townhouse|basement|cellar|lower level|ground|main|first|second|third|fourth|attic|roof|garage|\d+(st|nd|rd|th)?\s*(fl|flr|floor|level)\b|level\s*\d|floor\s*\d|.*\bfloor\b|.*\blevel\b)/i;
+const PUREFLOOR=/^(basement|cellar|attic|roof|garage|lower level|ground( floor)?|main( floor)?|\d+(st|nd|rd|th)?\s*(fl|flr|floor|level)|level\s*\d+|floor\s*\d+)$/i;
+const PUREFLOOR_START=/^(basement|cellar|attic|roof|lower level|ground floor|\d+(st|nd|rd|th)?\s*(fl|flr|floor|level)\b\.?)(?=\s)/i;
 function splitLoc(p){const parts=p.split(">").map(s=>s.trim()).filter(Boolean);
   if(parts.length>1&&FLOORISH.test(parts[0])){const code=(parts[0].match(/\b([0-9]+[A-Z]?|[A-Z][0-9]+)$/i)||[])[1];   // "Foyer - 27C" in "Apartment 27C" -> "Foyer"
     const rest=parts.slice(1).map(s=>code?s.replace(new RegExp("\\s*[-–]\\s*"+code+"$","i"),"").trim():s);return{floor:parts[0],loc:dedupe(rest).join(" · ")}}
@@ -49,9 +51,12 @@ function parsePage(items){
     locs=L.slice(hi+1,wi<0?hi+2:wi).map(l=>l.t).filter(t=>t.includes(">")||t.length)}
   else{// one keypad per page: "Area Name Basement\009 Guest Bathroom" and "Device Name: Entrance"
     const an=items.find(i=>/^Area Name:?$/i.test(i.s.trim()));if(!an)return [];
-    const area=after(items,an.s.trim()),dev=after(items,"Device Name:");
+    const area=after(items,an.s.trim()),dev=after(items,"Device Name:")||after(items,"Device Location:");
     wi=L.findIndex(l=>/^Wallplate:/.test(l.t));
-    locs=[area.split(/\s*[\\>]\s*/).concat(dev).filter(Boolean).join(" > ")]}
+    const ap=area.split(/\s*[\\>]\s*/).filter(Boolean);
+    if(ap.length===1&&!PUREFLOOR.test(ap[0])){   // "Basement Bathroom" / "2nd Floor Hallway": keep the whole room name, floor from its first word(s)
+      const f=(ap[0].match(PUREFLOOR_START)||[])[0];ap.unshift(f?f.trim().replace(/\bfl(r)?\.?$/i,"Floor"):"Main")}
+    locs=[ap.concat(dev).filter(Boolean).join(" > ")]}
   const color=after(items,"Color:");
   const be=items.find(i=>i.s.trim()==="Button Engraving");   // the button engraving column's font size (not the faceplate's)
   const fsz=be?items.find(i=>i.s.trim()==="Font Size:"&&Math.abs(i.x-be.x)<20):null;
