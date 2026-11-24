@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). projects.html = the team page (projects list + make a project link; new.html forwards there).
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-19-26A";   // shown at the bottom of every page; bump with each release
+const VERSION="11-24-26A";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -596,6 +596,10 @@ function drawRows(){if(!ROWS)return;const q=$("pSearch").value.trim().toLowerCas
   $("pRows").innerHTML=!ROWS.length?`<p class="hint">No projects yet. Each client link you make is added here, or tap “Add an existing link”.</p>`
   :!rs.length?`<p class="hint">${q?`No ${JOB.toLowerCase()} jobs match “${esc(q)}”.`:JOB==="Open"?"No open jobs. Everything is closed.":"No closed jobs yet. Tap “Close job” on a finished project to move it here."}${n[other]?` ${n[other]} ${other.toLowerCase()} job${n[other]===1?"":"s"}${q?(n[other]===1?" matches":" match"):""} under <button type="button" class="linkbtn" data-j="${other}">${other==="Open"?"Open jobs":"Closed"}</button>.`:""}</p>`:
   `<table class="ptab"><thead><tr><th>Project</th><th class="hs">Keypads</th><th>Status</th><th class="hs">Last activity</th><th></th></tr></thead><tbody>${rs.map(r=>`<tr data-id="${esc(r.id)}"><td class="pn"><b>${esc(r.title||"Untitled")}</b><small>${esc(r.client)}</small></td><td class="hs">${esc(r.keypads)}<small>${esc(r.types)}${r.finish?" · "+esc(r.finish):""}</small></td><td><span class="pst ${stCls(r.status)}">${esc(r.status||"Link sent")}</span>${r.approved?`<small>${esc(r.approved)} approved</small>`:""}</td><td class="hs">${esc(when(r.last))}</td><td><div class="pact"><button type="button" class="btnx primary" data-act="open">Open</button><button type="button" class="btnx" data-act="copy">Copy link</button><button type="button" class="btnx" data-act="job">${jobOf(r)==="Open"?"Close job":"Reopen"}</button><button type="button" class="btnx danger" data-act="rm" aria-label="Remove from list">${rmArm===r.id?"Tap to remove":"Remove"}</button></div></td></tr>`).join("")}</tbody></table>`}
+// links made before change marks (11-18-26A) carry no "sent": what was sent is the link the team made, so compare the client's latest with it (Jeff, Nov 24)
+function markFromOrig(p,p0){const by=new Map(p0.kp.map(k=>[T(k.n),k]));
+  p.kp.forEach(k=>{if(k.sent)return;const o=by.get(T(k.n));if(o)k.sent={l:o.labels.slice(),ty:typeName(o),loc:o.loc||"",floor:o.floor||"",note:o.note||""}});
+  if(!p.sent)p.sent=p0.kp.map(k=>({n:String(k.n),loc:k.loc||""}))}
 function loadIntoBuilder(p,email,id){const s0=p.st||{};
   D={id:p.id||id||"",title:p.title||"",replyTo:SALES,rev:p.rev||0,kp:p.kp,sent:p.sent||null};
   st.finish=s0.finish||"nickel";st.fx=fixFx(s0.fx);if(s0.case)st.case=s0.case;if(s0.size)st.size=s0.size;st.floor="All";fix();
@@ -606,6 +610,7 @@ async function openRow(r){
   openArm="";let p=null,latest=false;
   for(const u of [r.clink,r.link]){const t=linkTok(u);if(t&&(p=await tryOpen(t,r.client))){latest=u===r.clink;break}}
   if(!p){toast("Couldn't open this project with "+r.client+".",1);return}
+  if(latest&&p.kp.some(k=>!k.sent)){const p0=await tryOpen(linkTok(r.link),r.client);if(p0)markFromOrig(p,p0)}
   loadIntoBuilder(p,r.client,r.id);toast("Opened "+(p.title||"the project")+(latest?", with the client's latest changes":""))}
 function setView(v){if(!$("vtabs"))return;const list=v==="list"&&!!KP_API;document.body.classList.toggle("plv",list);
   $("vtabs").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===(list?"list":"edit")));
