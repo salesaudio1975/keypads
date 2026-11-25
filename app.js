@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). projects.html = the team page (projects list + make a project link; new.html forwards there).
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-25-26C";   // shown at the bottom of every page; bump with each release
+const VERSION="11-25-26D";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -526,6 +526,21 @@ if($("keBtn"))$("keBtn").addEventListener("click",()=>{if(!D.kp.length){toast("T
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(keFile(),null,1)],{type:"application/json"}));
   a.download=(D.title.trim()||"Keypads").replace(/[^\w -]/g,"")+" keypads for Keypad Editor.json";document.body.appendChild(a);a.click();a.remove();
   toast("Saved. In the Keypad Editor, open the .hw and press Import keypads.")});
+// myLutron's myProjects import, laid out like Jeff's Oct 28 Alisse export (Jeff, Nov 25: "this won't import to mylutron").
+// Only Alisse keypads: other families are skipped. Engraving words can't go in through the file; each keypad is marked custom engraving.
+function mlRows(){const H=["Area","Name","Quantity","List Price","Product Type","Product","System","Backbox Shape","Columns","Button Layout","Faceplate Finish","Custom Engraving","Personalization ID","Components"];
+  const fl=f=>{f=T(f);return /^(first|second|third|fourth|fifth|sixth|ground|main|lower|upper|top|1st|2nd|3rd|4th|5th|6th|\d+)$/i.test(f)?f+" Floor":f};
+  const rows=[H];let skip=0;
+  D.kp.forEach(k=>{if(famOf(k)!=="alisse"||gangsOf(k)){skip++;return}
+    const p=String(k.loc||"").split(/\s+·\s+/),room=p.length>1?p[0]:String(k.loc||""),name=(p.length>1?p.slice(1).join(" · "):String(k.loc||""))||("Keypad "+k.n);
+    const area=[fl(k.floor),T(room)].filter(Boolean).join("\\")||"New Area 1",n=k.cols.length;
+    rows.push([area,name,"1",n===1?"653":n===2?"816.5":"","Alisse","Keypad","HomeWorks (QSX)","Square Backbox",n+"-Column",k.cols.join(", ")+" Button",finName(kFin(k),"alisse"),"Yes","","Keypad, Base"])});
+  return {rows,skip}}
+if($("mlBtn"))$("mlBtn").addEventListener("click",()=>{const {rows,skip}=mlRows();if(rows.length<2){toast(skip?"Only Alisse keypads go to myLutron, and this project has none.":"There are no keypads to export yet.",1);return}
+  const q=v=>/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':String(v);
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([rows.map(r=>r.map(q).join(",")).join("\r\n")+"\r\n"],{type:"text/csv"}));
+  a.download=(D.title.trim()||"Keypads").replace(/[^\w -]/g,"")+" - myLutron.csv";document.body.appendChild(a);a.click();a.remove();
+  toast("Saved "+(rows.length-1)+" keypads. In myLutron, import it into the project, then add the engraving there."+(skip?" "+skip+" non-Alisse keypad"+(skip>1?"s were":" was")+" left out.":""))});
 let resetArm=0;$("resetBtn").addEventListener("click",e=>{const b=e.currentTarget;
   const lab=MODE==="builder"?"Start new project":"Undo all my changes";
   if(Date.now()-resetArm>4000){resetArm=Date.now();b.textContent=MODE==="builder"?"Tap again to clear this project":"Tap again to undo everything";setTimeout(()=>b.textContent=lab,4000);return}
