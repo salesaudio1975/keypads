@@ -406,3 +406,14 @@ body.plv .top .actions,body.plv #subline{display:none}
 @media print{.chgbar .cvseg{display:none}}
 .cvclean .chgbar{background:#f1f5f9;border-color:#cbd5e1;color:#334155}
 @media print{.cvclean .chgbar{display:none!important}}
+
+/* keypad picture copy (builder) */
+.kp.card .cpb{flex:none;width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(255,255,255,.5);background:transparent;color:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;margin-left:auto}
+.kp.card .cpb:hover,.kp.card .cpb:focus-visible{background:rgba(255,255,255,.15);color:#fff}
+.kp.card .cpb+.okb{margin-left:0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .kp.card .cpb{border-color:rgba(0,0,0,.4);color:rgba(0,0,0,.65)}}
+:root[data-theme="dark"] .kp.card .cpb{border-color:rgba(0,0,0,.4);color:rgba(0,0,0,.65)}
+@media print{.kp.card .cpb{display:none}}
+.kp.cpshot{position:fixed;left:-10000px;top:0;border:0;background:transparent;box-shadow:none;padding:0;margin:0;width:auto}
+.kp.cpshot .wallbox{background:transparent;box-shadow:none;padding:6px;width:auto;display:inline-flex;border-radius:0}
+.kp.cpshot .wallbox::after{display:none}
