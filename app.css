@@ -396,3 +396,13 @@ body.plv .top .actions,body.plv #subline{display:none}
 @media print{.kp .chg>.was{box-shadow:none}}
 .kp .cell.chg>.was,.pv .cell.chg>.was{transform:translate(-50%,10%)}
 .pv .was{display:none}   /* the editor says "Client changed from …" under the field instead */
+
+/* Original / Changes + original / Only changed */
+.chgbar .cvseg{display:inline-flex;flex:0 0 auto;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;background:#fff}
+.chgbar .cvseg button{font:600 13px/1 inherit;font-family:inherit;border:0;background:#fff;color:#475569;padding:8px 12px;cursor:pointer;white-space:nowrap}
+.chgbar .cvseg button+button{border-left:1px solid #cbd5e1}
+.chgbar .cvseg button[aria-pressed="true"]{background:#1f2937;color:#fff}
+.kp.orig .chg .tx{color:#b45309!important}
+.kp.orig .chgstrip:before{content:"Showing what you sent · ";font-weight:700}
+@media (max-width:640px){.chgbar{flex-wrap:wrap}.chgbar .cvseg{width:100%}.chgbar .cvseg button{flex:1;padding:8px 4px;font-size:12px;white-space:normal}}
+@media print{.chgbar .cvseg{display:none}}
