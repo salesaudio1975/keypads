@@ -402,7 +402,7 @@ body.plv .top .actions,body.plv #subline{display:none}
 .chgbar .cvseg button{font:600 13px/1 inherit;font-family:inherit;border:0;background:#fff;color:#475569;padding:8px 12px;cursor:pointer;white-space:nowrap}
 .chgbar .cvseg button+button{border-left:1px solid #cbd5e1}
 .chgbar .cvseg button[aria-pressed="true"]{background:#1f2937;color:#fff}
-.kp.orig .chg .tx{color:#b45309!important}
-.kp.orig .chgstrip:before{content:"Showing what you sent · ";font-weight:700}
 @media (max-width:640px){.chgbar{flex-wrap:wrap}.chgbar .cvseg{width:100%}.chgbar .cvseg button{flex:1;padding:8px 4px;font-size:12px;white-space:normal}}
 @media print{.chgbar .cvseg{display:none}}
+.cvclean .chgbar{background:#f1f5f9;border-color:#cbd5e1;color:#334155}
+@media print{.cvclean .chgbar{display:none!important}}
