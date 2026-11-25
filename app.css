@@ -389,3 +389,10 @@ body.plv .top .actions,body.plv #subline{display:none}
 #edGangs .gbtns{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 #edGangs .gbtns .small{font-size:12px;color:var(--muted)}
 #md textarea{min-height:220px}
+
+/* the old name on a changed button: a dark pill on the bottom of the orange outline */
+.kp .fam .key.chg,.pv .fam .key.chg{position:relative;overflow:visible;z-index:2}
+.kp .chg>.was,.pv .chg>.was{position:absolute;left:50%;top:100%;transform:translate(-50%,-45%);z-index:3;pointer-events:none;font:600 11px/1.3 Inter,system-ui,sans-serif;letter-spacing:0;text-transform:none;color:#fff;background:#1f2937;border-radius:10px;padding:1px 8px;white-space:nowrap;max-width:140%;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+@media print{.kp .chg>.was{box-shadow:none}}
+.kp .cell.chg>.was,.pv .cell.chg>.was{transform:translate(-50%,10%)}
+.pv .was{display:none}   /* the editor says "Client changed from …" under the field instead */

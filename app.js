@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). projects.html = the team page (projects list + make a project link; new.html forwards there).
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-24-26A";   // shown at the bottom of every page; bump with each release
+const VERSION="11-24-26B";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -90,6 +90,8 @@ const tooLong=(l,k)=>l.trim()&&!fitLines(kase(l.trim()),limitOf(k));
 // "Make client link" stamps each keypad with what was sent (k.sent) and the project with the list sent (D.sent)
 const T=s=>String(s||"").replace(/\s+/g," ").trim();
 const chgB=(k,i)=>!!(k.sent&&T(k.labels[i])!==T(k.sent.l[i]));
+// the old name on a changed button (Jeff picked "B2", a dark "was …" pill, Nov 24)
+const wasT=(k,i)=>chgB(k,i)?`<span class="was">was ${esc(T(k.sent.l[i])||"blank")}</span>`:"";
 function kpChg(k){const c={btns:[],type:false,where:false,isNew:false,note:T(k.note)&&T(k.note)!==T(k.sent&&k.sent.note)?T(k.note):""};
   if(!k.sent){c.isNew=!!(D.sent&&D.sent.length);}
   else{k.labels.forEach((l,i)=>{if(chgB(k,i))c.btns.push(i)});c.type=typeName(k)!==k.sent.ty;c.where=T(k.loc)!==T(k.sent.loc)||T(k.floor)!==T(k.sent.floor)}
@@ -116,9 +118,9 @@ function famPlate(k){
   const lab=()=>{const raw=(k.labels[idx]||"").trim(),tx=kase(raw),ln=raw?fitLines(tx,lim):[];if(raw&&!ln)bad.push(raw);idx++;
     return `<span class="tx${raw&&!ln?" bad":""}">${!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(tx)}</span>`};
   const sl=t[6]&&t[6].sl;
-  const cols=sl?`<div class="kcol slots">${[...sl].map(c=>c==="b"?`<div class="key${chgB(k,idx)?" chg":""}">${lab()}</div>`:c==="r"?`<div class="key rl"><span>▽</span><span>△</span></div>`:c==="i"?`<div class="ir"><i></i></div>`:`<div class="gapslot"></div>`).join("")}</div>`:t[4].map(cnt=>{let h="";
+  const cols=sl?`<div class="kcol slots">${[...sl].map(c=>c==="b"?`<div class="key${chgB(k,idx)?" chg":""}">${wasT(k,idx)}${lab()}</div>`:c==="r"?`<div class="key rl"><span>▽</span><span>△</span></div>`:c==="i"?`<div class="ir"><i></i></div>`:`<div class="gapslot"></div>`).join("")}</div>`:t[4].map(cnt=>{let h="";
     for(let i=0;i<cnt;i++,idx++){const raw=(k.labels[idx]||"").trim(),tx=kase(raw),ln=raw?fitLines(tx,lim):[];if(raw&&!ln)bad.push(raw);
-      h+=`<div class="key${chgB(k,idx)?" chg":""}"><span class="tx${raw&&!ln?" bad":""}">${!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(tx)}</span></div>`}
+      h+=`<div class="key${chgB(k,idx)?" chg":""}">${wasT(k,idx)}<span class="tx${raw&&!ln?" bad":""}">${!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(tx)}</span></div>`}
     if(t[5])h+=`<div class="key rl" style="flex:0 0 calc(var(--pw)*${RLH}/3.55)"><span>▽</span><span>△</span></div>`;
     return `<div class="kcol">${h}</div>`}).join("");
   return cols};
@@ -136,7 +138,7 @@ function plate(k){
       const raw=(k.labels[idx]||"").trim(),t=kase(raw),ln=raw?fitLines(t,limitOf(k)):[];
       if(raw&&!ln)bad.push(raw);
       const html=!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(t);
-      cells.push(`<div class="cell${chgB(k,idx)?" chg":""}" style="left:${XS[nc][ci]}%;top:${ys[i]}%"><i class="bt"></i><span class="tx${raw&&!ln?" bad":""}">${html}</span></div>`);
+      cells.push(`<div class="cell${chgB(k,idx)?" chg":""}" style="left:${XS[nc][ci]}%;top:${ys[i]}%"><i class="bt"></i><span class="tx${raw&&!ln?" bad":""}">${html}</span>${wasT(k,idx)}</div>`);
     }});
   return {html:`<div class="plate ${nc===1?"one":nc===2?"two":"three"}">${cells.join("")}</div>`,bad};
 }
