@@ -2,7 +2,7 @@
 // index.html = client view (unlock with email, edit, send changes). projects.html = the team page (projects list + make a project link; new.html forwards there).
 "use strict";
 const MODE=document.body.dataset.mode||"client";
-const VERSION="11-24-26B";   // shown at the bottom of every page; bump with each release
+const VERSION="11-24-26C";   // shown at the bottom of every page; bump with each release
 const FIN=[["agedbrass","Aged Brass","#6e5b3b"],["agedbronze","Aged Bronze","#4a3f33"],["chrome","Bright Chrome","#dfe0e1"],["brushedbrass","Brushed Brass","#ad9662"],["graphite","Graphite","#33322f"],["matteblack","Matte Black","#1f1f1f"],["nickel","Satin Nickel","#b4b1ad"],["brilliantwhite","Brilliant White","#e3e1db"],["champagne","Champagne","#bcb7a2"],["archwhite","Architectural White","#eae9e4"],["snowwhite","Snow White","#f0f0f0"]];
 // Other Lutron families. g = plate geometry in inches [W,H, keys X,Y,W,H, gap, raise/lower row] (from the Keypad Editor)
 const FAMS={alisse:{n:"Alisse",fg:"alisse"},
@@ -90,15 +90,19 @@ const tooLong=(l,k)=>l.trim()&&!fitLines(kase(l.trim()),limitOf(k));
 // "Make client link" stamps each keypad with what was sent (k.sent) and the project with the list sent (D.sent)
 const T=s=>String(s||"").replace(/\s+/g," ").trim();
 const chgB=(k,i)=>!!(k.sent&&T(k.labels[i])!==T(k.sent.l[i]));
+// the name a card draws: the one that was sent when showing the original (never in the editor's preview)
+const lbl=(k,i)=>CV==="orig"&&!PVR&&chgB(k,i)?(k.sent.l[i]||""):(k.labels[i]||"");
 // the old name on a changed button (Jeff picked "B2", a dark "was …" pill, Nov 24)
-const wasT=(k,i)=>chgB(k,i)?`<span class="was">was ${esc(T(k.sent.l[i])||"blank")}</span>`:"";
+const wasT=(k,i)=>CV!=="orig"&&chgB(k,i)?`<span class="was">was ${esc(T(k.sent.l[i])||"blank")}</span>`:"";
 function kpChg(k){const c={btns:[],type:false,where:false,isNew:false,note:T(k.note)&&T(k.note)!==T(k.sent&&k.sent.note)?T(k.note):""};
   if(!k.sent){c.isNew=!!(D.sent&&D.sent.length);}
   else{k.labels.forEach((l,i)=>{if(chgB(k,i))c.btns.push(i)});c.type=typeName(k)!==k.sent.ty;c.where=T(k.loc)!==T(k.sent.loc)||T(k.floor)!==T(k.sent.floor)}
   c.any=!!(c.btns.length||c.type||c.where||c.isNew||c.note);return c}
 const gone=()=>{if(!D.sent)return[];const now=new Set(D.kp.map(k=>T(k.n)));return D.sent.filter(x=>!now.has(T(x.n)))};
 function stampSent(){D.kp.forEach(k=>{k.sent={l:k.labels.slice(),ty:typeName(k),loc:k.loc||"",floor:k.floor||"",note:k.note||""}});D.sent=D.kp.map(k=>({n:String(k.n),loc:k.loc||""}))}
-let ONLY=ls.get("kp:only")===true;
+// what the keypad cards show once a client has changed things (Jeff, Nov 24: "original, changed with original and only changed"):
+// "orig" = the names that were sent, "both" = the edits with a "was …" pill on each changed button, "only" = only the changed keypads
+let CV=["orig","both","only"].includes(ls.get("kp:cv"))?ls.get("kp:cv"):ls.get("kp:only")===true?"only":"both",PVR=false;
 function chgText(k,c){const who=MODE==="builder"?"Client ":"You ",out=[];
   if(c.isNew)out.push(who+"added this keypad");
   if(c.btns.length)out.push(who.trim()+" changed "+c.btns.map(i=>`<b>${esc(T(k.sent.l[i])||"(blank)")}</b> → <b>${esc(T(k.labels[i])||"(blank)")}</b>`).join(", "));
@@ -115,11 +119,11 @@ function tint(h,a){const n=parseInt(h.slice(1),16);return "#"+[n>>16,n>>8&255,n&
 function famPlate(k){
   const gs=gangsOf(k)||[typeOf(k)],t0=gs[0],F=FAMS[t0[1]],[W1,H,X,Y,FW,FH,GAP,RLH]=F.g,W=W1+(gs.length-1)*GANG_W,lim=limitOf(k),bad=[];let idx=0;
   const keysFor=t=>{
-  const lab=()=>{const raw=(k.labels[idx]||"").trim(),tx=kase(raw),ln=raw?fitLines(tx,lim):[];if(raw&&!ln)bad.push(raw);idx++;
+  const lab=()=>{const raw=lbl(k,idx).trim(),tx=kase(raw),ln=raw?fitLines(tx,lim):[];if(raw&&!ln)bad.push(raw);idx++;
     return `<span class="tx${raw&&!ln?" bad":""}">${!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(tx)}</span>`};
   const sl=t[6]&&t[6].sl;
   const cols=sl?`<div class="kcol slots">${[...sl].map(c=>c==="b"?`<div class="key${chgB(k,idx)?" chg":""}">${wasT(k,idx)}${lab()}</div>`:c==="r"?`<div class="key rl"><span>▽</span><span>△</span></div>`:c==="i"?`<div class="ir"><i></i></div>`:`<div class="gapslot"></div>`).join("")}</div>`:t[4].map(cnt=>{let h="";
-    for(let i=0;i<cnt;i++,idx++){const raw=(k.labels[idx]||"").trim(),tx=kase(raw),ln=raw?fitLines(tx,lim):[];if(raw&&!ln)bad.push(raw);
+    for(let i=0;i<cnt;i++,idx++){const raw=lbl(k,idx).trim(),tx=kase(raw),ln=raw?fitLines(tx,lim):[];if(raw&&!ln)bad.push(raw);
       h+=`<div class="key${chgB(k,idx)?" chg":""}">${wasT(k,idx)}<span class="tx${raw&&!ln?" bad":""}">${!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(tx)}</span></div>`}
     if(t[5])h+=`<div class="key rl" style="flex:0 0 calc(var(--pw)*${RLH}/3.55)"><span>▽</span><span>△</span></div>`;
     return `<div class="kcol">${h}</div>`}).join("");
@@ -135,7 +139,7 @@ function plate(k){
   const nc=k.cols.length,bad=[],cells=[];let idx=0;
   k.cols.forEach((cnt,ci)=>{const ys=YS[cnt]||[50];
     for(let i=0;i<cnt;i++,idx++){
-      const raw=(k.labels[idx]||"").trim(),t=kase(raw),ln=raw?fitLines(t,limitOf(k)):[];
+      const raw=lbl(k,idx).trim(),t=kase(raw),ln=raw?fitLines(t,limitOf(k)):[];
       if(raw&&!ln)bad.push(raw);
       const html=!raw?"":ln?ln.map(esc).join("<br>"):"⚠ "+esc(t);
       cells.push(`<div class="cell${chgB(k,idx)?" chg":""}" style="left:${XS[nc][ci]}%;top:${ys[i]}%"><i class="bt"></i><span class="tx${raw&&!ln?" bad":""}">${html}</span>${wasT(k,idx)}</div>`);
@@ -149,10 +153,10 @@ const typeName=k=>{const gs=gangsOf(k);if(gs)return gs.length+"-gang: "+gs.map(t
 const tagOf=k=>{const t=typeOf(k),nb=k.cols.reduce((a,b)=>a+b,0),gs=gangsOf(k);if(gs)return FAMS[t[1]].n+" "+gs.length+"-gang, "+nb+" buttons";return (t?FAMS[t[1]].n+(t[6]&&t[6].hy?" hybrid":"")+" ":groups().length>1?"Alisse ":"")+nb+"-button"};
 const groups=()=>{const s=new Set(D.kp.map(grpOf));if(!s.size)s.add("alisse");return GROUPS.filter(g=>s.has(g))};
 function chgBar(){if(!D.sent)return"";const ch=D.kp.filter(k=>kpChg(k).any),nb=D.kp.reduce((a,k)=>a+kpChg(k).btns.length,0),nn=D.kp.filter(k=>kpChg(k).note).length,gn=gone();
-  if(!ch.length&&!gn.length){if(ONLY){ONLY=false;ls.set("kp:only",false)}return ""}
+  if(!ch.length&&!gn.length){if(CV!=="both"){CV="both";ls.set("kp:cv",CV)}return ""}
   const who=MODE==="builder"?"The client":"You";
   const bits=[nb?nb+" button name"+(nb===1?"":"s"):"",nn?nn+" note"+(nn===1?"":"s"):"",gn.length?"removed "+gn.map(x=>"keypad "+esc(x.n)+(x.loc?" ("+esc(x.loc)+")":"")).join(", "):""].filter(Boolean);
-  return `<div class="chgbar"><p><b>✎ ${who} changed ${ch.length} keypad${ch.length===1?"":"s"}</b>${bits.length?": "+bits.join(", "):""}. Changed buttons have an orange outline.</p><button type="button" class="btnx" id="onlyChg" aria-pressed="${ONLY}">${ONLY?"Show all keypads":"Show only changed"}</button></div>`}
+  return `<div class="chgbar"><p><b>✎ ${who} changed ${ch.length} keypad${ch.length===1?"":"s"}</b>${bits.length?": "+bits.join(", "):""}. Changed buttons have an orange outline.</p><div class="cvseg" role="group" aria-label="Show">${[["orig","Original"],["both","Changes + original"],["only","Only changed"]].map(([v,t])=>`<button type="button" data-cv="${v}" aria-pressed="${CV===v}">${t}</button>`).join("")}</div></div>`}
 function render(){
   const name=D.title||(MODE==="builder"?"New project":"Your");
   if(!document.body.classList.contains("plv")){$("title").textContent=name+" keypads";document.title=name+" keypads"}
@@ -163,12 +167,12 @@ function render(){
   const tot=D.kp.length,okN=D.kp.filter(k=>k.ok).length;
   const badK=D.kp.filter(k=>k.labels.some(l=>tooLong(l,k)));
   $("out").innerHTML=(badK.length?`<div class="pagewarn" role="alert"><p><b>⚠ ${badK.length} keypad${badK.length===1?" has a name":"s have names"} too long to engrave:</b> ${badK.slice(0,6).map(k=>"keypad "+esc(k.n)+" ("+k.labels.filter(l=>tooLong(l,k)).map(l=>esc(l.trim())).join(", ")+")").join(", ")}${badK.length>6?", and "+(badK.length-6)+" more":""}. Shorten ${badK.length===1?"it":"them"} before approving.</p><button type="button" id="showBad">Show me</button></div>`:"")+chgBar()+(tot?`<div class="apbar${okN===tot?" done":""}"><p><b>${okN===tot?"Every keypad is approved.":"Check off each keypad when it's right."}</b> ${okN===tot?"Tap “Send changes” to send them to us. Tap a ✓ to unlock a keypad.":"Tap the ✓ in a keypad's corner to approve it and lock it. Tap it again to unlock."} <span class="apn">${okN} of ${tot} approved</span></p><div class="r">${okN<tot?`<button type="button" class="btnx primary" data-all="approve">✓ Approve all ${tot}</button>`:""}${okN?`<button type="button" class="btnx" data-all="unlock">Unlock all</button>`:""}</div></div>`:"")+fl.filter(f=>st.floor==="All"||f===st.floor).map(f=>{
-    const ks=D.kp.map((k,i)=>[k,i]).filter(([k])=>(k.floor||"No floor")===f&&(!ONLY||kpChg(k).any));if(!ks.length)return "";
+    const ks=D.kp.map((k,i)=>[k,i]).filter(([k])=>(k.floor||"No floor")===f&&(CV!=="only"||kpChg(k).any));if(!ks.length)return "";
     const nOk=ks.filter(([k])=>k.ok).length,all=nOk===ks.length;
     return `<section class="floor"><h2><span>${esc(/basement|floor|level|attic|roof|garage|cellar|apartment|apt\b|unit|suite|penthouse|residence|building|wing|house/i.test(f)?f:f+" floor")} · ${ks.length} keypad${ks.length===1?"":"s"}${nOk?` · ${all?"all ":""}${nOk} approved`:""}</span><button type="button" class="btnx apf${all?"":" go"}" data-floor="${esc(f)}" data-act="${all?"unlock":"approve"}">${all?"Unlock this floor":"✓ Approve this floor"}</button></h2><div class="grid">${ks.map(([k,i])=>{
       const p=plate(k),own=k.finish&&finOk(grpOf(k),k.finish),cg=kpChg(k),ct=chgText(k,cg);
       const lp=String(k.loc||"").split("·").map(x=>x.trim()).filter(Boolean),room=lp[0]||"No location yet",spot=lp.slice(1).join(" · ")||(f==="No floor"?"":/basement|floor|level|attic|roof|garage|cellar|apartment|apt\b|unit|suite|penthouse|residence|building|wing|house/i.test(f)?f:f+" floor");
-      return `<div class="kp card${k.ok?" ok":""}${p.bad.length?" toolong":""}${cg.any?" changed":""}" tabindex="0" role="button" data-i="${i}" aria-label="${k.ok?"Keypad "+esc(k.n)+", "+esc(room)+", approved":"Edit keypad "+esc(k.n)+", "+esc(room)}"><div class="khead"><span class="num${String(k.n).length>3?" long":""}">${esc(k.n)}</span><div class="kt"><b class="room">${esc(room)}</b>${spot?`<span class="spot">${esc(spot)}</span>`:""}</div><button type="button" class="okb" data-ok="${i}" aria-pressed="${!!k.ok}" title="${k.ok?"Approved. Tap to unlock":"Approve and lock this keypad"}" aria-label="${k.ok?"Unlock keypad "+esc(k.n):"Approve keypad "+esc(k.n)}">✓</button></div>${p.bad.length?`<div class="strip">⚠ Name${p.bad.length>1?"s":""} too long: <b>${p.bad.map(x=>esc(x.trim())).join(", ")}</b><span>Tap to fix</span></div>`:""}${ct?`<div class="chgstrip">✎ ${ct}</div>`:""}${T(k.note)?`<div class="notestrip"><b>Note:</b> ${esc(T(k.note))}</div>`:""}<div class="wallbox ${wallCls(k)}">${p.html}</div><div class="cap">${(()=>{const g=grpOf(k),v=kFin(k),fc=(finList(g).find(x=>x[0]===v)||[0,v,"#ccc"])[2];return `<small class="fin${own?" own":""}"><i class="sw" style="background:${fc}"></i>${esc(finName(v,g)+codeOf(g,v))}${own?" (own finish)":MODE==="client"&&v!==projFin(g)?" (previewing)":""}</small>`})()}<div class="kfoot"><span class="tag">${esc(tagOf(k))}</span>${k.ok?`<span class="appr">✓ Approved</span>`:`<span class="edit">${p.bad.length?"Tap to fix":"Tap to edit"}</span>`}</div></div></div>`}).join("")}</div></section>`;
+      return `<div class="kp card${k.ok?" ok":""}${p.bad.length?" toolong":""}${cg.any?" changed":""}${cg.any&&CV==="orig"?" orig":""}" tabindex="0" role="button" data-i="${i}" aria-label="${k.ok?"Keypad "+esc(k.n)+", "+esc(room)+", approved":"Edit keypad "+esc(k.n)+", "+esc(room)}"><div class="khead"><span class="num${String(k.n).length>3?" long":""}">${esc(k.n)}</span><div class="kt"><b class="room">${esc(room)}</b>${spot?`<span class="spot">${esc(spot)}</span>`:""}</div><button type="button" class="okb" data-ok="${i}" aria-pressed="${!!k.ok}" title="${k.ok?"Approved. Tap to unlock":"Approve and lock this keypad"}" aria-label="${k.ok?"Unlock keypad "+esc(k.n):"Approve keypad "+esc(k.n)}">✓</button></div>${p.bad.length?`<div class="strip">⚠ Name${p.bad.length>1?"s":""} too long: <b>${p.bad.map(x=>esc(x.trim())).join(", ")}</b><span>Tap to fix</span></div>`:""}${ct?`<div class="chgstrip">✎ ${ct}</div>`:""}${T(k.note)?`<div class="notestrip"><b>Note:</b> ${esc(T(k.note))}</div>`:""}<div class="wallbox ${wallCls(k)}">${p.html}</div><div class="cap">${(()=>{const g=grpOf(k),v=kFin(k),fc=(finList(g).find(x=>x[0]===v)||[0,v,"#ccc"])[2];return `<small class="fin${own?" own":""}"><i class="sw" style="background:${fc}"></i>${esc(finName(v,g)+codeOf(g,v))}${own?" (own finish)":MODE==="client"&&v!==projFin(g)?" (previewing)":""}</small>`})()}<div class="kfoot"><span class="tag">${esc(tagOf(k))}</span>${k.ok?`<span class="appr">✓ Approved</span>`:`<span class="edit">${p.bad.length?"Tap to fix":"Tap to edit"}</span>`}</div></div></div>`}).join("")}</div></section>`;
   }).join("")||`<p class="hint">No keypads yet. Tap “+ Add keypad”${MODE==="builder"?", or paste them from the Google Sheet above":""}.</p>`;
   updSum();
 }
@@ -257,7 +261,7 @@ function checkInputs(){const k=D.kp[cur];
   });
 }
 let edFocus=-1;
-function edPreview(){const k=D.kp[cur],g=grpOf(k),t=typeOf(k);$("edPv").className="pv "+wallCls(k);$("edPv").innerHTML=plate(k).html;
+function edPreview(){const k=D.kp[cur],g=grpOf(k),t=typeOf(k);$("edPv").className="pv "+wallCls(k);PVR=true;try{$("edPv").innerHTML=plate(k).html}finally{PVR=false}
   const rows=Math.max(...k.cols);$("edPv").style.setProperty("--epw",rows<=4?"150px":rows<=6?"124px":"104px");
   $("edMain").classList.toggle("multi",k.cols.length>1);$("edMain").style.setProperty("--nc",k.cols.length);edMark();
   const fl=k.floor?(/basement|floor|level|attic|roof|garage|cellar|apartment|apt\b|unit|suite|penthouse|residence|building|wing|house/i.test(k.floor)?k.floor:k.floor+" floor"):"";
@@ -318,7 +322,7 @@ function bulkOk(list,on){
   toast((go.length?go.length+" keypad"+(go.length===1?"":"s")+" approved":"Nothing new to approve")+(skip.length?". Not approved, names too long: keypad "+skip.map(k=>k.n).join(", ")+". Shorten them first.":""),skip.length>0)}
 function tapKp(i){if(D.kp[i].ok){toast("Keypad "+D.kp[i].n+" is approved. Tap its check mark to unlock it.");return}openEd(i)}
 $("out").addEventListener("click",e=>{
-  if(e.target.closest("#onlyChg")){ONLY=!ONLY;ls.set("kp:only",ONLY);render();return}
+  {const cvb=e.target.closest("[data-cv]");if(cvb){CV=cvb.dataset.cv;ls.set("kp:cv",CV);render();return}}
   if(e.target.closest("#showBad")){if(st.floor!=="All"&&!document.querySelector("#out .kp.toolong")){st.floor="All";save();render()}
     const el=document.querySelector("#out .kp.toolong");if(el){el.scrollIntoView({behavior:"smooth",block:"center"});el.focus({preventScroll:true})}return}
   const a=e.target.closest("[data-all]");if(a){bulkOk(D.kp,a.dataset.all==="approve");return}
